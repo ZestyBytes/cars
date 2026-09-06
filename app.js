@@ -78,9 +78,9 @@ function renderBoard() {
   $('#board').dataset.count = state.players.length;
   $('#board').innerHTML = state.players.map(p => `<article class="panel" style="--c:${p.color}" data-panel="${p.id}">
     <button class="spot-button" data-spot="${p.id}" aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
-      <span class="panel-name"><span class="player-dot"></span>${escapeHtml(p.name)}</span><span class="panel-model">${carLabel(p.car)}</span>
+      <span class="panel-name"><span class="name-tag">${escapeHtml(p.name)}</span></span><span class="panel-model">${carLabel(p.car)}</span>
       <span class="panel-art">${carMark(p.car)}</span><span class="score-line"><span class="panel-score" data-score="${p.id}">${p.tripPoints}</span><span class="score-unit">points</span></span>
-      <span class="spot-label">Spotted! +${state.tripRules.mode === 'rarity' ? state.tripRules.values[p.car] : 1}</span>
+      <span class="spot-label">Tap to spot · +${state.tripRules.mode === 'rarity' ? state.tripRules.values[p.car] : 1}</span>
     </button><div class="panel-bottom"><span class="panel-detail" data-detail="${p.id}"></span><button class="btn panel-minus" data-minus="${p.id}" aria-label="Undo last sighting for ${escapeHtml(p.name)}">− Undo</button></div></article>`).join('');
   $$('[data-spot]').forEach(el => el.onclick = () => score(el.dataset.spot));
   $$('[data-minus]').forEach(el => el.onclick = () => unscore(el.dataset.minus));
@@ -106,14 +106,14 @@ function teamMarkup() {
 }
 function standingsMarkup() {
   const ranked = [...state.players].sort((a, b) => b.points - a.points || b.wins - a.wins);
-  return ranked.map(p => `<li class="standing"><span class="player-dot" style="--c:${p.color}"></span><span class="standing-who"><b>${escapeHtml(p.name)}</b><small>${p.total} cars · ${p.wins} ${p.wins === 1 ? 'win' : 'wins'}</small></span><span class="standing-total">${p.points}</span></li>`).join('');
+  return ranked.map(p => `<li class="standing"><span class="player-dot" style="--c:${p.color}"></span><span class="standing-who"><b>${escapeHtml(p.name)}</b><small>${p.total !== p.points ? `${p.total} cars · ` : ''}${p.wins} ${p.wins === 1 ? 'win' : 'wins'}</small></span><span class="standing-total">${p.points}</span></li>`).join('');
 }
 function updateGame() {
   state.players.forEach(p => {
     const score = $(`[data-score="${p.id}"]`);
     if (score) score.textContent = p.tripPoints;
     const detail = $(`[data-detail="${p.id}"]`);
-    if (detail) detail.textContent = `${p.trip} ${p.trip === 1 ? 'car' : 'cars'} · best ${p.bests[p.car] || 0}`;
+    if (detail) detail.textContent = [p.trip !== p.tripPoints ? `${p.trip} ${p.trip === 1 ? 'car' : 'cars'}` : '', p.bests[p.car] ? `Best ${p.bests[p.car]}` : ''].filter(Boolean).join(' · ');
     const minus = $(`[data-minus="${p.id}"]`); if (minus) minus.disabled = !p.trip;
   });
   const lead = leadText();
@@ -136,7 +136,7 @@ function score(id, bonus = false) {
   const saved = save(); updateGame();
   const panel = $(`[data-panel="${id}"]`);
   if (panel) { panel.classList.remove('is-hit'); void panel.offsetWidth; panel.classList.add('is-hit'); }
-  blip(bonus ? 880 : 660);
+  playerSound(id, bonus);
   if (Game.raceWon(state)) { endTrip(); return; }
   if (saved) toast(`${findPlayer(id).name}: ${carLabel(event.car)} +${event.points}`, () => unscore(id, event.id));
 }
@@ -160,10 +160,10 @@ function showResults(celebrate = false, archive = false) {
   $('#results-winner').textContent = archive ? 'Our road book' : winners.length > 1 ? 'It’s a tie!' : winners.length ? `${winners[0].name} wins!` : 'A quiet journey';
   const scores = t ? [...t.scores].sort((a, b) => b.score - a.score) : [];
   $('#results-sub').textContent = archive ? `${state.journeys.length} journeys and counting` : scores.length ? `${scores.map(s => s.score).join(' – ')} points${winners.length ? ' · well spotted!' : ' · another adventure awaits'}` : 'Your next adventure starts here.';
-  $('#result-cards').innerHTML = !archive && t ? t.scores.map(s => `<div class="result-card" style="--c:${s.color}">${carMark(s.car)}<b>${escapeHtml(s.name)}</b><strong>${s.score}</strong><small>${s.spots ?? s.score} cars spotted</small></div>`).join('') : '';
+  $('#result-cards').innerHTML = !archive && t ? t.scores.map(s => `<div class="result-card" style="--c:${s.color}">${carMark(s.car)}<b>${escapeHtml(s.name)}</b><strong>${s.score}</strong>${s.spots != null && s.spots !== s.score ? `<small>${s.spots} ${s.spots === 1 ? 'car' : 'cars'} spotted</small>` : ''}</div>`).join('') : '';
   const team = t?.rules?.teamTarget;
   const total = t?.scores.reduce((sum, s) => sum + (s.spots ?? s.score), 0) || 0;
-  $('#result-highlights').innerHTML = !archive && t ? `${team && total >= team ? `<p>✓ Team challenge complete · ${total} cars together!</p>` : ''}${(t.highlights || []).map(h => `<p>☆ ${escapeHtml(h.name)}${h.first ? '’s first record' : '’s new personal best'}: ${h.count} ${carLabel(h.car)} spots</p>`).join('')}` : '';
+  $('#result-highlights').innerHTML = !archive && t ? `${team && total >= team ? `<p>✓ Team challenge complete · ${total} cars together!</p>` : ''}${(t.highlights || []).filter(h => !h.first || h.count >= 5).map(h => `<p>☆ ${escapeHtml(h.name)}${h.first ? '’s first record' : '’s new personal best'}: ${h.count} ${carLabel(h.car)} sightings</p>`).join('')}` : '';
   $('#btn-reopen').hidden = archive || !Game.canReopen(state);
   $('#btn-swap').hidden = state.players.length < 2;
   $('#btn-new-trip').textContent = archive ? 'Begin journey →' : 'Play again →';
@@ -183,17 +183,31 @@ function setTab(which) {
     }).join('') || '<li class="lb-empty">Your first journey will be recorded here.</li>';
     return;
   }
-  let rows = which === 'trip' && state.lastTrip ? state.lastTrip.scores.map(s => ({ ...s, value: s.score, sub: `${carLabel(s.car)} · ${s.spots ?? s.score} cars` })) : state.players.map(p => ({ ...p, value: p.points, sub: `${p.total} cars spotted · ${p.wins} journeys won` }));
+  let rows = which === 'trip' && state.lastTrip ? state.lastTrip.scores.map(s => ({ ...s, value: s.score, sub: `${carLabel(s.car)}${s.spots != null && s.spots !== s.score ? ` · ${s.spots} ${s.spots === 1 ? 'car' : 'cars'}` : ''}` })) : state.players.map(p => ({ ...p, value: p.points, sub: `${p.total !== p.points ? `${p.total} cars spotted · ` : ''}${p.wins} ${p.wins === 1 ? 'journey' : 'journeys'} won` }));
   rows.sort((a, b) => b.value - a.value);
   list.innerHTML = rows.map((r, i) => `<li class="lb-row"><span class="lb-rank">${rows.findIndex(s => s.value === r.value) + 1}</span><span class="lb-car">${carMark(r.car)}</span><span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span><span class="lb-score">${r.value}<small>points</small></span></li>`).join('');
 }
 function applyTheme() {
   const dark = state.theme === 'dark'; document.documentElement.dataset.theme = state.theme;
-  $$('[data-theme-toggle]').forEach(el => { el.textContent = dark ? 'Day mode' : 'Night mode'; el.setAttribute('aria-label', `Switch to ${dark ? 'day' : 'night'} mode`); });
+  $$('[data-theme-toggle]').forEach(el => { el.setAttribute('aria-label', `Switch to ${dark ? 'day' : 'night'} mode`); });
   $('meta[name="theme-color"]').content = dark ? '#171d1c' : '#eef0e7';
 }
 function toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); }
-function soundLabel() { $('#btn-sound').textContent = state.sound ? 'Sound on' : 'Sound off'; $('#btn-sound').setAttribute('aria-pressed', state.sound); }
+function soundLabel() {
+  const button = $('#btn-sound');
+  button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/>${state.sound ? '<path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>' : '<path d="m16 9 5 6m0-6-5 6"/>'}</svg>`;
+  button.setAttribute('aria-pressed', state.sound);
+  button.setAttribute('aria-label', state.sound ? 'Mute sound' : 'Enable sound');
+  button.title = state.sound ? 'Mute sound' : 'Enable sound';
+}
+// Distinct, gentle two-note signatures follow the player, not their car.
+function playerSound(id, bonus = false) {
+  const index = Math.max(0, state.players.findIndex(p => p.id === id));
+  const notes = [[392, 523.25], [659.25, 880], [523.25, 659.25], [440, 587.33], [587.33, 783.99], [349.23, 440]][index % 6];
+  blip(notes[0]);
+  setTimeout(() => blip(notes[1]), 95);
+  if (bonus) setTimeout(() => blip(notes[1] * 1.5), 190);
+}
 function blip(freq) {
   if (!state.sound) return;
   try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
@@ -221,10 +235,9 @@ function openGameStandings() {
   openModal('The journey so far', `<h3>${escapeHtml(leadText().title)}</h3>${teamMarkup()}<h3 style="margin-top:24px">Overall points</h3><ol class="standings-list">${standingsMarkup()}</ol><p class="hint" style="margin-top:16px">Points include this journey. Wins are awarded when you finish.</p>`);
 }
 function openMenu() {
-  openModal('Journey menu', `<div class="menu-list"><button class="btn" id="menu-theme">${state.theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}</button><button class="btn" id="menu-rules">Our rules & spotting tips</button><p class="hint" id="offline-status">${navigator.onLine ? 'Connected' : 'Offline'} · scores save on this device</p></div>`);
-  $('#menu-theme').onclick = () => { toggleTheme(); $('#menu-theme').textContent = state.theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'; };
+  openModal('Journey menu', `<div class="menu-list"><button class="btn" id="menu-rules">Our rules & spotting tips</button><p class="hint" id="offline-status">${navigator.onLine ? 'Connected' : 'Offline'} · scores save on this device</p></div>`);
   $('#menu-rules').onclick = () => openModal('Our rules', `<p>Any colour or generation of the named model counts. Count each car once, and agree who spotted it first.</p><p class="hint" style="margin:14px 0">${state.tripRules.mode === 'race' ? `First to ${state.tripRules.target} points wins.` : state.tripRules.mode === 'rarity' ? 'Your point values are fixed for this journey.' : 'Each car earns one point.'} ${state.tripRules.bonusCar ? 'A bonus car earns 3 points. Claim it for one player only.' : ''}</p>${state.players.map(p => `<div class="log-row"><b>${escapeHtml(p.name)} · ${carLabel(p.car)}</b><small>${CARS[p.car].hint}</small></div>`).join('')}`);
-  if ('caches' in window) caches.match('assets/cars/fiat-500.webp', { cacheName: 'spotted-v9' }).then(ready => { const el = $('#offline-status'); if (el) el.textContent = ready ? 'Ready offline · scores save on this device' : 'Scores save on this device. Offline artwork is still preparing.'; }).catch(() => {});
+  if ('caches' in window) caches.match('assets/cars/fiat-500.webp', { cacheName: 'spotted-v10' }).then(ready => { const el = $('#offline-status'); if (el) el.textContent = ready ? 'Ready offline · scores save on this device' : 'Scores save on this device. Offline artwork is still preparing.'; }).catch(() => {});
 }
 function runConfetti() {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;

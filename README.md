@@ -41,9 +41,9 @@ external font requests. Hosted on [GitHub Pages](https://zestybytes.github.io/ca
   bar shows the leader and team progress, with standings and bonus claims in dialogs.
 - Full width adds a supporting rail with lead, team challenge, bonus and overall
   points. Full-width results show overall standings alongside the journey result.
-- Two players stay side by side, including in a half-screen window. Up to six
+- Two players stay side by side, including in a half-screen window. Short landscape windows place the poster beside the score. Up to six
   players are supported, using additional scrollable rows when necessary.
-- Night mode is available in setup, results and the game menu; sound is optional
+- Tap the Spotted logo in any header for night mode; the speaker icon toggles sound. Each player has a distinct two-note chime. Sound is optional
   and its state is saved. Reduced-motion preferences suppress animation/confetti.
 - Scoring uses normal buttons (touch, Enter and Space); correction controls are
   separate. Dialogs trap focus, close with Escape and return focus to their opener.
@@ -54,7 +54,7 @@ The existing `carspotter.v1` localStorage key is retained. Old players, scores,
 journey wins, history and active journeys migrate automatically. Original totals
 remain **cars spotted**. **Points** are separate, starting from the old totals;
 rarity and bonus scoring can subsequently increase points faster than sightings.
-Personal bests count sightings of the assigned car, excluding bonus cars.
+Personal bests count sightings of the assigned car, excluding bonus cars. The interface only shows a separate car count when it differs from points; zero bests and first records below five sightings are not highlighted.
 
 Every change saves locally. Reloading resumes an active journey or the latest
 result. Completed records keep the latest 500 journeys; all-time counts, points,
