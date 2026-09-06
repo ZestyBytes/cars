@@ -301,4 +301,3 @@ progress::-moz-progress-bar{background:var(--green)}
 
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
-
