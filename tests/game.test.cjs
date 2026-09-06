@@ -84,7 +84,7 @@ test('all catalog posters exist and all local shell requests are in offline cach
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
   for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 1000); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=10)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=11)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];
@@ -97,4 +97,19 @@ test('reopening at archive limit restores the oldest record rather than silently
   const s = started(); s.journeys = Array.from({ length: 500 }, (_, i) => ({ number: i, scores: [] }));
   Game.finish(s, 2000); assert.equal(s.journeys.length, 500);
   Game.reopen(s, 3000); assert.equal(s.journeys.length, 500); assert.equal(s.journeys[0].number, 0);
+});
+test('simplification preserves legacy scores and undo values but new sightings always earn one point', () => {
+  const s = started({ mode: 'rarity', bonus: true, values: { jazz: 4 } });
+  const p = s.players[1];
+  const old = Game.add(s, p.id);
+  Game.simplify(s);
+  assert.equal(p.points, 4);
+  assert.equal(s.tripRules.bonusCar, null);
+  assert.equal(s.settings.teamTarget, 0);
+  assert.equal(Game.add(s, p.id).points, 1);
+  Game.remove(s, p.id, old.id);
+  assert.equal(p.points, 1);
+  Game.finish(s, 2000); Game.start(s, catalog, 3000);
+  assert.equal(s.tripRules.bonusCar, null);
+  assert.equal(Game.add(s, p.id).points, 1);
 });

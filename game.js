@@ -129,6 +129,10 @@ const Game = (() => {
   function raceWon(s) {
     return !!s.tripStart && s.tripRules.mode === 'race' && s.players.some(p => p.tripPoints >= s.tripRules.target);
   }
-  return { fresh, player, migrate, start, add, remove, finish, reopen, canReopen, swap, raceWon };
+  function simplify(s) {
+    s.settings = { mode: 'classic', target: 0, teamTarget: 0, bonus: false, values: {} };
+    if (s.tripRules) s.tripRules = { ...s.tripRules, ...s.settings, bonusCar: null };
+  }
+  return { simplify, fresh, player, migrate, start, add, remove, finish, reopen, canReopen, swap, raceWon };
 })();
 if (typeof module !== 'undefined') module.exports = Game;
