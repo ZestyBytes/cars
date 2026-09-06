@@ -1,11 +1,11 @@
-# Car Spotter 🚗
+# Spotted
 
 A road-trip spotting game for two (or more). Everyone picks a car to look for — a
 Tesla, a Honda Jazz, a tractor — and taps their sheet every time they see one. End the
 journey and a stamped trophy says who won.
 
 Styled as a road book in the same system as the [Noted](https://github.com/ZestyBytes/nota)
-archive: pale sage paper, Space Mono and Spectral, and every player mounted on their
+archive, down to the icon: a pale tile, a serif letter and a coloured full stop: pale sage paper, Space Mono and Spectral, and every player mounted on their
 own sheet with mounting tape and a pinned name tag. Light by default; tapping the
 “car spotter” title switches to the dark setting for night drives.
 
@@ -83,4 +83,5 @@ lock while a journey is running so the display doesn't sleep mid-game.
 | `cars.js` | The two cars and their plates |
 | `assets/cars/` | The illustrated car plates |
 | `app.js` | State, scoring, timer, leaderboards, confetti |
+| `icon.svg` | App icon: the `s.` mark |
 | `sw.js` | Offline cache |

@@ -1,5 +1,5 @@
 /* ==================================================================
-   Car Spotter — app logic.
+   Spotted — app logic.
    No dependencies, no build step. State lives in localStorage so the
    game survives a reload, a dropped signal, or the phone locking.
    ================================================================== */

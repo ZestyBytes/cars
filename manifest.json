@@ -1,19 +1,14 @@
 {
-  "name": "Car Spotter",
-  "short_name": "CarSpotter",
-  "description": "A two-player road-trip game: spot your car, tap your button, win the journey.",
+  "name": "Spotted",
+  "short_name": "spotted",
+  "description": "A road book for spotting cars on a journey: tap your sheet, win the trip.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0e1016",
-  "theme_color": "#12141a",
+  "background_color": "#eef0e7",
+  "theme_color": "#eef0e7",
   "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230e1016'/%3E%3Ctext x='50%25' y='58%25' font-size='300' text-anchor='middle' dominant-baseline='middle'%3E%F0%9F%9A%97%3C/text%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
   ]
 }

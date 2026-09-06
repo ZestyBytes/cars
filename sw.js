@@ -1,12 +1,13 @@
 /* Tiny offline cache — the game has to keep working when signal drops. */
-const CACHE = 'carspotter-v7';
+const CACHE = 'spotted-v8';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css?v=7',
-  './cars.js?v=7',
-  './app.js?v=7',
+  './styles.css?v=8',
+  './cars.js?v=8',
+  './app.js?v=8',
   './manifest.json',
+  './icon.svg',
   './assets/cars/tesla-model-y.webp',
   './assets/cars/honda-jazz.webp',
 ];
