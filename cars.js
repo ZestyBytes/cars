@@ -144,7 +144,37 @@ const CAR_SHAPES = {
   },
 };
 
+/* Photographed specimens. These are mounted as plates rather than traced:
+   a three-quarter view is what makes a car recognisable from the passenger
+   seat, and tracing it to a side profile throws that away. Their studio
+   background is toned to the paper, so a plate sits on the page. */
+const CAR_PHOTOS = {
+  'photo:tesla-y': { label: 'Tesla Model Y', src: 'assets/cars/tesla-model-y.webp' },
+  'photo:honda-jazz': { label: 'Honda Jazz', src: 'assets/cars/honda-jazz.webp' },
+};
+
+/* A specimen mark is a photographic plate, an uploaded photograph, or a
+   drawn silhouette. */
+function carMark(key, cls = '', ownPhoto = null) {
+  if (key === 'upload') {
+    return isPhoto(ownPhoto)
+      ? `<span class="car-photo ${cls}" style="background-image:url('${ownPhoto}')" aria-hidden="true"></span>`
+      : carSvg('ev', cls);
+  }
+  if (CAR_PHOTOS[key]) {
+    return `<span class="car-photo ${cls}" style="background-image:url('${CAR_PHOTOS[key].src}')" aria-hidden="true"></span>`;
+  }
+  return carSvg(key, cls);
+}
+
+function carLabel(key) {
+  if (key === 'upload') return 'Your photo';
+  if (CAR_PHOTOS[key]) return CAR_PHOTOS[key].label;
+  return (CAR_SHAPES[key] || CAR_SHAPES.ev).label;
+}
+
 const CAR_ORDER = [
+  'photo:tesla-y', 'photo:honda-jazz',
   'ev', 'hatch', 'suv', 'sports', 'convertible', 'classic',
   'van', 'pickup', 'lorry', 'bus', 'camper', 'taxi', 'bike',
   'tractor', 'emergency',
@@ -152,7 +182,9 @@ const CAR_ORDER = [
 
 /* Guess a silhouette from whatever the player types in the "car" field. */
 const CAR_KEYWORDS = [
-  [/tesla|model [3sxy]|electric|\bev\b|polestar|leaf|ioniq|saloon|sedan|bmw|mercedes|audi/i, 'ev'],
+  [/tesla|model ?[3xy]\b/i, 'photo:tesla-y'],
+  [/jazz|honda fit\b/i, 'photo:honda-jazz'],
+  [/model ?s\b|electric|\bev\b|polestar|leaf|ioniq|saloon|sedan|bmw|mercedes|audi/i, 'ev'],
   [/jazz|fiesta|corsa|polo|golf|clio|yaris|hatch|mini|micra|up!|aygo|small/i, 'hatch'],
   [/suv|4x4|land ?rover|range ?rover|jeep|discovery|qashqai|tucson|x5|defender/i, 'suv'],
   [/ferrari|lambo|porsche|supercar|sports|gt3|mclaren|corvette|mustang|fast/i, 'sports'],

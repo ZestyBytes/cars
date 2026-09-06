@@ -79,7 +79,7 @@ function portraitHtml(p, cls = '') {
 /* Photographs are squared off and shrunk before they are stored: the
    archive lives in localStorage, and a phone camera file would fill it
    several times over. */
-function processPhoto(file, size = 256) {
+function processPhoto(file, size = 256, ratio = 1) {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) return reject(new Error('not an image'));
     const reader = new FileReader();
@@ -88,13 +88,18 @@ function processPhoto(file, size = 256) {
       const img = new Image();
       img.onerror = () => reject(new Error('undecodable'));
       img.onload = () => {
+        const cw = size;
+        const ch = Math.round(size / ratio);   // portraits are square, cars are wide
         const canvas = document.createElement('canvas');
-        canvas.width = canvas.height = size;
+        canvas.width = cw;
+        canvas.height = ch;
         const ctx = canvas.getContext('2d');
-        const scale = Math.max(size / img.width, size / img.height);
+        ctx.fillStyle = '#eef0e7';             // paper, for anything the crop leaves bare
+        ctx.fillRect(0, 0, cw, ch);
+        const scale = Math.max(cw / img.width, ch / img.height);
         const w = img.width * scale;
         const h = img.height * scale;
-        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        ctx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
         resolve(canvas.toDataURL('image/jpeg', 0.82));
       };
       img.src = reader.result;

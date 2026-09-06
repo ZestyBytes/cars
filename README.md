@@ -62,6 +62,14 @@ python3 -m http.server 8000   # then open http://localhost:8000
 Or push to GitHub Pages (Settings → Pages → deploy from branch) and open that URL in
 the car.
 
+## The specimen plates
+
+`assets/cars/*.webp` are photographs rather than traced silhouettes: a three-quarter
+view is what makes a car recognisable from the passenger seat, and flattening one to a
+side profile throws that away. Their studio background is shifted onto the archive's
+paper tone so a plate sits on the page rather than glowing on it, and the dark theme
+dims the whole plate so it isn't a lamp in the face at night.
+
 ## Notes on the car browser
 
 The layout is landscape-first with large targets, so it works on the Tesla browser as
@@ -77,5 +85,6 @@ lock while a journey is running so the display doesn't sleep mid-game.
 | `styles.css` | Field-notebook theme (light and dark), responsive board layout |
 | `cars.js` | Car silhouettes + the keyword guesser that picks one |
 | `avatars.js` | Portraits: character outlines, initials, photo resizing |
+| `assets/cars/` | Photographed specimen plates |
 | `app.js` | State, scoring, timer, leaderboards, confetti |
 | `sw.js` | Offline cache |

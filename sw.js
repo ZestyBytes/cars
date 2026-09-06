@@ -8,6 +8,8 @@ const ASSETS = [
   './avatars.js',
   './app.js',
   './manifest.json',
+  './assets/cars/tesla-model-y.webp',
+  './assets/cars/honda-jazz.webp',
 ];
 
 self.addEventListener('install', (e) => {

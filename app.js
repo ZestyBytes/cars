@@ -26,8 +26,8 @@ const DEFAULT_STATE = () => ({
   tripStart: null,
   journeys: [],   // every finished journey, newest last
   players: [
-    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#1c6e63', portrait: 'adult', photo: null, trip: 0, total: 0, wins: 0 },
-    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#a13a2e', portrait: 'child', photo: null, trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'photo:tesla-y', color: '#1c6e63', portrait: 'adult', photo: null, trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'photo:honda-jazz', color: '#a13a2e', portrait: 'child', photo: null, trip: 0, total: 0, wins: 0 },
   ],
   lastTrip: null,
 });
@@ -181,7 +181,7 @@ function playerCard(p) {
           <small>Spotter</small>
         </button>
         <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change specimen type for ${escapeHtml(p.name)}">
-          <span data-preview="${p.id}">${carSvg(p.shape)}</span>
+          <span data-preview="${p.id}">${carMark(p.shape, 'plate-mark', p.carPhoto)}</span>
           <small>Specimen</small>
         </button>
       </div>
@@ -198,21 +198,26 @@ function playerCard(p) {
 
 function refreshCardArt(p) {
   const preview = document.querySelector(`[data-preview="${p.id}"]`);
-  if (preview) preview.innerHTML = carSvg(p.shape);
+  if (preview) preview.innerHTML = carMark(p.shape, 'plate-mark', p.carPhoto);
 }
 
 /* The shape picker is a sheet rather than an inline grid — fifteen
    silhouettes per player would swamp the setup screen on a phone. */
+let shapeTarget = null;
+
 function openShapePicker(playerId) {
   const p = findPlayer(playerId);
   if (!p) return;
+  shapeTarget = playerId;
   const grid = $('#shape-grid');
   const modal = $('#shape-modal');
   modal.style.setProperty('--c', p.color);
-  grid.innerHTML = CAR_ORDER.map(
-    (key) => `<button class="shape-btn" data-value="${key}" aria-pressed="${key === p.shape}"
-                title="${CAR_SHAPES[key].label}" aria-label="${CAR_SHAPES[key].label}"
-                type="button">${carSvg(key)}<small>${CAR_SHAPES[key].label}</small></button>`
+  const keys = CAR_ORDER.concat(isPhoto(p.carPhoto) ? ['upload'] : []);
+  grid.innerHTML = keys.map(
+    (key) => `<button class="shape-btn ${key.startsWith('photo:') || key === 'upload' ? 'shape-btn-photo' : ''}"
+                data-value="${key}" aria-pressed="${key === p.shape}"
+                title="${carLabel(key)}" aria-label="${carLabel(key)}"
+                type="button">${carMark(key, 'tile-mark', p.carPhoto)}<small>${carLabel(key)}</small></button>`
   ).join('');
   grid.querySelectorAll('.shape-btn').forEach((b) => {
     b.addEventListener('click', () => {
@@ -266,6 +271,28 @@ function openPortraitPicker(playerId) {
   modal.hidden = false;
 }
 
+function useCarPhoto(file) {
+  const p = findPlayer(shapeTarget);
+  if (!p) return;
+  processPhoto(file, 512, 16 / 9)
+    .then((dataUrl) => {
+      const previous = p.carPhoto;
+      p.carPhoto = dataUrl;
+      p.shape = 'upload';
+      p.shapeLocked = true;
+      if (!save()) {
+        p.carPhoto = previous;
+        p.shape = previous ? 'upload' : 'ev';
+        save();
+      }
+      refreshCardArt(p);
+      openShapePicker(p.id);   // redraw the picker so the new plate is in it
+    })
+    .catch(() => {
+      confirmDialog('Could not use that picture', 'The file could not be read as an image.', () => {});
+    });
+}
+
 /* A photograph replaces any previous one for that spotter, so the
    archive never holds more than one image per player. */
 function usePhoto(file) {
@@ -295,7 +322,7 @@ function addPlayer() {
   const used = state.players.map((p) => p.color);
   const color = COLORS.find((c) => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
   state.players.push({
-    id: uid(), name: '', car: '', shape: 'suv', color, portrait: 'initials', photo: null,
+    id: uid(), name: '', car: '', shape: 'suv', color, portrait: 'initials', photo: null, carPhoto: null,
     trip: 0, total: 0, wins: 0,
   });
   save();
@@ -335,11 +362,11 @@ function renderBoard() {
       <span class="acc-no">${accNo(p.id)}</span>
       ${state.hero === 'portrait'
         ? portraitHtml(p, 'portrait-hero')
-        : carSvg(p.shape, 'panel-car')}
+        : carMark(p.shape, 'panel-car', p.carPhoto)}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
         ${state.hero === 'portrait'
-          ? carSvg(p.shape, 'panel-mini-car')
+          ? carMark(p.shape, 'panel-mini-car', p.carPhoto)
           : portraitHtml(p, 'portrait-mini')}
         <span class="chip">${escapeHtml(p.car)}</span>
         <span class="panel-total">All-time ${p.total}</span>
@@ -737,6 +764,13 @@ $$('[data-hero]').forEach((btn) => {
     save();
     paintHeroChoice();
   });
+});
+
+$('#btn-car-photo').addEventListener('click', () => $('#car-photo-file').click());
+$('#car-photo-file').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) useCarPhoto(file);
+  e.target.value = '';
 });
 
 $('#btn-photo').addEventListener('click', () => $('#photo-file').click());
