@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#12141a">
+<meta name="description" content="Car Spotter — a two-player road-trip game. Spot your car, tap your button, win the journey.">
+<title>Car Spotter</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ───────────────────────── SETUP ───────────────────────── -->
+<section id="screen-setup" class="screen is-active">
+  <header class="topbar">
+    <h1 class="logo">Car<span>Spotter</span></h1>
+    <button class="btn btn-ghost" id="btn-view-alltime" type="button">All-time</button>
+  </header>
+
+  <div class="setup-scroll">
+    <p class="hint">Who's playing, and what are they hunting?</p>
+    <div id="player-editor" class="player-editor"></div>
+    <button class="btn btn-add" id="btn-add-player" type="button">
+      <span class="plus">+</span> Add player
+    </button>
+  </div>
+
+  <footer class="setup-footer">
+    <button class="btn btn-danger-ghost" id="btn-reset-all" type="button">Reset everything</button>
+    <button class="btn btn-primary btn-start" id="btn-start" type="button">Start journey</button>
+  </footer>
+</section>
+
+<!-- ───────────────────────── GAME ───────────────────────── -->
+<section id="screen-game" class="screen">
+  <header class="gamebar">
+    <div class="gamebar-left">
+      <span class="trip-label">Journey <span id="trip-number">1</span></span>
+      <span class="trip-timer" id="trip-timer">00:00</span>
+    </div>
+    <div class="gamebar-right">
+      <button class="icon-btn" id="btn-sound" type="button" title="Sound" aria-label="Toggle sound">🔊</button>
+      <button class="icon-btn" id="btn-undo" type="button" title="Undo" aria-label="Undo last spot">↶</button>
+      <button class="btn btn-end" id="btn-end" type="button">End journey</button>
+    </div>
+  </header>
+  <main id="board" class="board"></main>
+</section>
+
+<!-- ───────────────────────── RESULTS ───────────────────────── -->
+<section id="screen-results" class="screen">
+  <canvas id="confetti" class="confetti"></canvas>
+  <div class="results-inner">
+    <div class="trophy" id="trophy" aria-hidden="true">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <defs>
+          <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffe89a"/><stop offset="45%" stop-color="#f6c445"/><stop offset="100%" stop-color="#c98a12"/>
+          </linearGradient>
+        </defs>
+        <g fill="url(#gold)">
+          <path d="M30 14h40v18a20 20 0 0 1-40 0z"/>
+          <path d="M30 18H20a10 10 0 0 0 10 14zM70 18h10a10 10 0 0 1-10 14z" opacity=".9"/>
+          <rect x="45" y="50" width="10" height="16" rx="3"/>
+          <rect x="32" y="66" width="36" height="9" rx="4"/>
+          <rect x="26" y="75" width="48" height="11" rx="5"/>
+        </g>
+        <path d="M42 24l4 8 9 1-6.5 6 1.7 8.8L42 43.6 33.8 47.8 35.5 39 29 33l9-1z" fill="#fff" opacity=".55" transform="translate(8,0) scale(.9)"/>
+      </svg>
+    </div>
+    <p class="results-kicker" id="results-kicker">Journey complete</p>
+    <h2 class="results-winner" id="results-winner">—</h2>
+    <p class="results-sub" id="results-sub"></p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-tab="trip" role="tab" type="button">This journey</button>
+      <button class="tab" data-tab="all" role="tab" type="button">All-time</button>
+    </div>
+    <ol class="leaderboard" id="leaderboard"></ol>
+
+    <div class="results-actions">
+      <button class="btn btn-primary" id="btn-new-trip" type="button">New journey</button>
+      <button class="btn btn-ghost" id="btn-edit-players" type="button">Edit players</button>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── CONFIRM DIALOG ───────────────────────── -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title">Are you sure?</h3>
+    <p id="modal-body"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modal-cancel" type="button">Cancel</button>
+      <button class="btn btn-danger" id="modal-ok" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── CAR PICKER ───────────────────────── -->
+<div class="modal" id="shape-modal" hidden>
+  <div class="modal-card modal-card-wide" role="dialog" aria-modal="true" aria-labelledby="shape-title">
+    <h3 id="shape-title">Pick a car shape</h3>
+    <div class="shape-grid" id="shape-grid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="shape-close" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="cars.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
