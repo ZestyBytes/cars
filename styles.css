@@ -48,7 +48,6 @@ button,input{font:inherit;color:inherit;}
 .sheet:before{left:20px;transform:rotate(-7deg);}
 .sheet:after{right:20px;transform:rotate(6deg);}
 .mount-tag{position:absolute;top:-11px;left:20px;z-index:3;max-width:calc(100% - 96px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--c);color:#fff;font:10px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:5px 9px 4px;transform:rotate(-2deg);box-shadow:0 3px 6px -2px rgba(0,0,0,.35);}
-.acc-no{position:absolute;top:12px;right:16px;z-index:3;font:11px var(--mono);letter-spacing:.04em;color:var(--faint);}
 .chip{display:inline-flex;border:1px solid var(--c,var(--line));border-radius:2px;padding:3px 9px;color:var(--c,var(--muted));font:10px var(--mono);text-transform:uppercase;letter-spacing:.08em;}
 .stamp{display:inline-block;font:9px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;border:1.5px solid currentColor;border-radius:2px;padding:3px 7px 2px;transform:rotate(-3deg);}
 
@@ -100,9 +99,6 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .board{flex:1;display:grid;gap:26px 18px;padding:20px 16px calc(16px + var(--safe-b));min-height:0;}
 @media(orientation:portrait){
   .board{grid-auto-flow:row;grid-auto-rows:1fr;}
-  .panel{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);align-items:center;column-gap:14px;padding:32px 16px 58px;}
-  .panel-car,img.panel-car{align-self:center;justify-self:center;margin:0;max-width:100%;max-height:100%;width:auto;}
-  .panel .panel-score{align-self:center;}
   .board[data-count="4"],.board[data-count="5"],.board[data-count="6"]{grid-template-columns:1fr 1fr;}
 }
 @media(orientation:landscape){
@@ -128,6 +124,17 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .panel-total{font:9px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--faint);}
 .panel-minus{flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:0;background:var(--surface);color:var(--muted);font:700 16px var(--mono);line-height:1;cursor:pointer;}
 .panel-minus:active{background:var(--paper-alt);}
+
+/* Wider than tall: the car sits beside the tally instead of above it, so
+   both are big enough to read from the driver's seat. */
+.panel.is-wide{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);align-items:center;column-gap:16px;padding:22px 14px 46px;}
+.panel.is-wide .panel-car,.panel.is-wide img.panel-car{align-self:center;justify-self:center;margin:0;width:auto;max-width:100%;max-height:100%;}
+.panel.is-wide .panel-score{align-self:center;font-size:clamp(52px,20vh,170px);}
+/* On a short sheet the footer rule would eat the height the car needs, so
+   the undo and the running total tuck into the corner instead. */
+.panel.is-wide .panel-target{left:12px;right:auto;bottom:8px;gap:8px;padding:0;border-top:0;}
+.panel.is-wide .panel-minus{width:34px;height:34px;font-size:14px;}
+.panel.is-wide .panel-total{margin-left:0;}
 
 /* A spot leaves a mark: the ink pools where the finger landed. */
 .ripple{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--c);opacity:.16;pointer-events:none;animation:ripple .6s ease-out forwards;}

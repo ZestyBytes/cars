@@ -1,11 +1,11 @@
 /* Tiny offline cache — the game has to keep working when signal drops. */
-const CACHE = 'carspotter-v1';
+const CACHE = 'carspotter-v6';
 const ASSETS = [
   './',
   './index.html',
-  './styles.css',
-  './cars.js',
-  './app.js',
+  './styles.css?v=6',
+  './cars.js?v=6',
+  './app.js?v=6',
   './manifest.json',
   './assets/cars/tesla-model-y.webp',
   './assets/cars/honda-jazz.webp',

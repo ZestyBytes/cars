@@ -33,14 +33,6 @@ const DEFAULT_STATE = () => ({
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
-/* Every specimen sheet carries an accession number, always the same
-   one for a given player. */
-function accNo(id) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return `No. ${String(h % 10000).padStart(4, '0')}`;
-}
-
 /* ------------------------------ state ------------------------------ */
 let state = load();
 let undoStack = [];
@@ -88,7 +80,13 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 function showScreen(id) {
   $$('.screen').forEach((s) => s.classList.toggle('is-active', s.id === id));
-  if (id === 'screen-game') requestWakeLock(); else releaseWakeLock();
+  if (id === 'screen-game') {
+    requestWakeLock();
+    // A hidden board measures zero, so the sheets are laid out once shown.
+    requestAnimationFrame(layoutPanels);
+  } else {
+    releaseWakeLock();
+  }
 }
 
 function escapeHtml(str) {
@@ -166,7 +164,6 @@ function playerCard(p) {
   return `
     <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
       <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
-      <span class="acc-no">${accNo(p.id)}</span>
       <div class="pcard-fields">
         <label class="field-label"><span>Spotter</span>
           <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
@@ -220,7 +217,6 @@ function renderBoard() {
     <div class="panel sheet" style="--c:${p.color}" data-panel="${p.id}" role="button" tabindex="0"
          aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
       <span class="mount-tag">${escapeHtml(p.name)}</span>
-      <span class="acc-no">${accNo(p.id)}</span>
       ${carMark(p.car, 'panel-car')}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
@@ -231,6 +227,7 @@ function renderBoard() {
 
   $('#trip-number').textContent = state.tripNumber;
   renderStandings();
+  layoutPanels();
 
   board.querySelectorAll('[data-panel]').forEach((el) => {
     el.addEventListener('pointerdown', (e) => {
@@ -268,6 +265,13 @@ function renderStandings() {
     </li>`).join('');
   const n = state.journeys.length;
   $('#standings-foot').textContent = `${n} ${n === 1 ? 'journey' : 'journeys'} on record`;
+}
+
+function layoutPanels() {
+  $$('.panel').forEach((el) => {
+    const r = el.getBoundingClientRect();
+    el.classList.toggle('is-wide', r.width > r.height * 1.05);
+  });
 }
 
 function score(id, event) {
@@ -711,7 +715,9 @@ $('#btn-reset-all').addEventListener('click', () => {
     showScreen('screen-setup');
   }
 
+  window.addEventListener('orientationchange', () => setTimeout(layoutPanels, 250));
   window.addEventListener('resize', () => {
+    layoutPanels();
     if ($('#screen-results').classList.contains('is-active')) {
       const c = $('#confetti');
       c.width = c.clientWidth;
