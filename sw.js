@@ -1,39 +1,38 @@
-/* Tiny offline cache — the game has to keep working when signal drops. */
-const CACHE = 'spotted-v8';
+/* Versioned, atomic offline shell. All ten posters are available offline.
+   Never substitute HTML for a failed image or cache unrelated origins. */
+const CACHE = 'spotted-v9';
 const ASSETS = [
-  './',
-  './index.html',
-  './styles.css?v=8',
-  './cars.js?v=8',
-  './app.js?v=8',
-  './manifest.json',
-  './icon.svg',
-  './assets/cars/tesla-model-y.webp',
-  './assets/cars/honda-jazz.webp',
+  './', './index.html', './styles.css?v=9', './cars.js?v=9', './game.js?v=9', './app.js?v=9',
+  './manifest.json', './icon.svg',
+  './assets/cars/tesla-model-y.webp', './assets/cars/honda-jazz.webp',
+  './assets/cars/ford-fiesta.webp', './assets/cars/vauxhall-corsa.webp',
+  './assets/cars/volkswagen-golf.webp', './assets/cars/mini-hatch.webp',
+  './assets/cars/nissan-qashqai.webp', './assets/cars/kia-sportage.webp',
+  './assets/cars/tesla-model-3.webp', './assets/cars/fiat-500.webp',
 ];
-
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // Activate only after the complete version is cached. Current in-memory
+  // journeys stay open; the next navigation loads the new complete shell.
 });
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('spotted-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener('fetch', (e) => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    // Network first so a deploy is picked up, cache as the fallback.
-    fetch(e.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-        return res;
-      })
-      .catch(() => caches.match(e.request).then((hit) => hit || caches.match('./index.html')))
-  );
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(event.request);
+    if (event.request.mode !== 'navigate' && cached) return cached;
+    try {
+      const response = await fetch(event.request);
+      if (!response.ok) return cached || response;
+      // Cache the complete shell only at install time. A fresh HTML document
+      // may reference a newer version; its requests pass through normally.
+      return response;
+    } catch {
+      return cached || (event.request.mode === 'navigate' ? await cache.match('./index.html') : undefined) || Response.error();
+    }
+  })());
 });

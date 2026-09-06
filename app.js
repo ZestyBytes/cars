@@ -1,670 +1,291 @@
-/* ==================================================================
-   Spotted — app logic.
-   No dependencies, no build step. State lives in localStorage so the
-   game survives a reload, a dropped signal, or the phone locking.
-   ================================================================== */
-
-const STORE_KEY = 'carspotter.v1';
-
-/* Enough journeys to cover years of driving, and still a small enough
-   record that a browser has no reason to evict it. */
-const MAX_JOURNEYS = 500;
-
-/* The archive's per-topic inks: saturated specimen-label colours,
-   never pastel chips. */
-const COLORS = [
-  '#1c6e63', '#a13a2e', '#3f6b2e', '#5b4a9e',
-  '#8a5a12', '#96355a', '#8a4a1a',
-];
-
-const DEFAULT_STATE = () => ({
-  version: 1,
-  sound: true,
-  theme: 'light',
-  tripNumber: 1,
-  tripStart: null,
-  journeys: [],   // every finished journey, newest last
-  players: [
-    { id: uid(), name: 'Dad', car: 'model-y', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
-    { id: uid(), name: 'Molly', car: 'jazz', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
-  ],
-  lastTrip: null,
-});
-
-function uid() { return Math.random().toString(36).slice(2, 9); }
-
-/* ------------------------------ state ------------------------------ */
-let state = load();
-let undoStack = [];
-let timerId = null;
-let wakeLock = null;
-
-function load() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (!raw) return DEFAULT_STATE();
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.players)) return DEFAULT_STATE();
-    if (!Array.isArray(parsed.journeys)) parsed.journeys = []; // archives saved before the log existed
-    parsed.players.forEach((p) => {
-      p.trip = p.trip || 0;
-      p.total = p.total || 0;
-      p.wins = p.wins || 0;
-      if (!CARS[p.car]) p.car = 'model-y';   // archives from before the pair
-    });
-    return Object.assign(DEFAULT_STATE(), parsed);
-  } catch (err) {
-    console.warn('Could not read saved game, starting fresh.', err);
-    return DEFAULT_STATE();
-  }
-}
-
+/* Spotted: a dependency-free, device-local family road book. */
+const STORE_KEY = 'carspotter.v1'; // Keep the original key and migrate in place.
+const COLORS = ['#1c6e63', '#a13a2e', '#3f6b2e', '#5b4a9e', '#8a5a12', '#96355a'];
+const COLOR_NAMES = ['Teal', 'Terracotta', 'Green', 'Purple', 'Ochre', 'Berry'];
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const escapeHtml = str => String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+let loadWarning = false;
+let state;
+try { state = Game.migrate(JSON.parse(localStorage.getItem(STORE_KEY)), CARS); }
+catch { state = Game.fresh(); loadWarning = true; }
+let timerId, wakeLock, audioCtx, toastTimer, toastAction, modalReturnFocus, modalCleanup;
+let currentTab = 'trip';
 function save() {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    return true;
-  } catch (err) {
-    console.warn('Could not save game.', err);
-    // Silently losing a score would be worse than saying so.
-    confirmDialog('Could not save',
-      'There is no room left in this browser\u2019s storage, so the last score was not recorded.',
-      () => {});
-    return false;
-  }
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); return true; }
+  catch { toast('Storage is unavailable. Keep this page open: changes may not survive a reload.', null, 0); return false; }
 }
-
-/* ------------------------------ helpers ------------------------------ */
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-
-function showScreen(id) {
-  $$('.screen').forEach((s) => s.classList.toggle('is-active', s.id === id));
-  if (id === 'screen-game') {
-    requestWakeLock();
-    // A hidden board measures zero, so the sheets are laid out once shown.
-    requestAnimationFrame(layoutPanels);
-  } else {
-    releaseWakeLock();
-  }
-}
-
-function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function fmtDate(ts) {
-  return new Date(ts).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' });
-}
-
+function findPlayer(id) { return state.players.find(p => p.id === id); }
 function fmtDuration(ms) {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
-  const pad = (n) => String(n).padStart(2, '0');
-  return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  const pad = n => String(n).padStart(2, '0');
+  return seconds >= 3600 ? `${Math.floor(seconds / 3600)}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}` : `${pad(Math.floor(seconds / 60))}:${pad(seconds % 60)}`;
 }
-
-/* ------------------------------ setup screen ------------------------------ */
+function showScreen(id) {
+  $$('.screen').forEach(el => el.classList.toggle('is-active', el.id === id));
+  dismissToast();
+  if (id === 'screen-game') requestWakeLock(); else releaseWakeLock();
+  window.scrollTo(0, 0);
+}
 function renderEditor() {
-  const wrap = $('#player-editor');
-  wrap.innerHTML = state.players.map(playerCard).join('');
-
-  wrap.querySelectorAll('[data-name]').forEach((el) => {
-    el.addEventListener('input', () => {
-      const p = findPlayer(el.dataset.name);
-      p.name = el.value;
-      const tag = el.closest('.pcard').querySelector('.mount-tag');
-      if (tag) tag.textContent = p.name || 'Unnamed';
-      save();
-    });
+  $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
+    <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
+    <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Choose car for ${escapeHtml(p.name || 'player')}">${carMark(p.car)}<span>Change car ↗</span></button>
+      <div class="pcard-fields"><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
+      <div><p class="eyebrow">Looking for</p><h3 class="selected-car-name">${carLabel(p.car)}</h3></div>
+      <div class="swatches" aria-label="Player colour">${COLORS.map((c, i) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}" aria-pressed="${c === p.color}" aria-label="${COLOR_NAMES[i]}"></button>`).join('')}</div>
+      ${state.settings.mode === 'rarity' ? `<label class="car-value">Points per spot<input type="number" class="field" min="1" max="5" step="1" data-value-car="${p.car}" value="${state.settings.values[p.car] || CARS[p.car].value}"></label>` : ''}
+      <p class="hint">${p.bests[p.car] ? `Best journey: ${p.bests[p.car]} ${carLabel(p.car)} spots` : 'A fresh page for your next adventure.'}</p></div></div></article>`).join('');
+  $$('[data-name]').forEach(el => el.oninput = () => { findPlayer(el.dataset.name).name = el.value; save(); });
+  $$('[data-pick]').forEach(el => el.onclick = () => openLibrary(el.dataset.pick));
+  $$('[data-color]').forEach(el => el.onclick = () => { findPlayer(el.dataset.color).color = el.dataset.value; save(); renderEditor(); });
+  $$('[data-value-car]').forEach(el => el.onchange = () => {
+    const value = Math.max(1, Math.min(5, Math.floor(Number(el.value)) || 1));
+    state.settings.values[el.dataset.valueCar] = value; save(); renderEditor();
   });
-
-  wrap.querySelectorAll('[data-car]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const p = findPlayer(el.dataset.car);
-      p.car = el.dataset.value;
-      save();
-      renderEditor();
-    });
-  });
-
-  wrap.querySelectorAll('[data-color]').forEach((el) => {
-    el.addEventListener('click', () => {
-      const p = findPlayer(el.dataset.color);
-      p.color = el.dataset.value;
-      save();
-      renderEditor();
-    });
-  });
-
-  wrap.querySelectorAll('[data-remove]').forEach((el) => {
-    el.addEventListener('click', () => {
-      state.players = state.players.filter((p) => p.id !== el.dataset.remove);
-      save();
-      renderEditor();
-    });
-  });
+  $$('[data-remove]').forEach(el => el.onclick = () => confirmDialog('Remove this player?', 'Their previous journeys stay in the log. Their current overall totals will be removed from the standings.', () => {
+    state.players = state.players.filter(p => p.id !== el.dataset.remove); save(); renderEditor();
+  }, 'Remove player'));
+  $('#btn-add-player').disabled = state.players.length >= 6;
+  $('#setting-mode').value = state.settings.mode;
+  $('#setting-target').value = state.settings.target;
+  $('#setting-team').value = state.settings.teamTarget;
+  $('#setting-bonus').checked = state.settings.bonus;
+  $('#race-option').hidden = state.settings.mode !== 'race';
+  $('#mode-hint').textContent = state.settings.mode === 'rarity' ? 'Choose 1–5 points per model above. These are house rules: agree what is harder to spot on your route. Any colour or generation counts.' : 'Any colour or generation counts. Count each car once. A passenger can keep the score.';
 }
-
-function playerCard(p) {
-  const swatches = COLORS.map(
-    (c) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}"
-              aria-pressed="${c === p.color}" aria-label="Colour ${c}" type="button"></button>`
-  ).join('');
-
-  const choices = CAR_ORDER.map(
-    (key) => `<button class="car-option" data-car="${p.id}" data-value="${key}"
-                aria-pressed="${key === p.car}" aria-label="${carLabel(key)}"
-                type="button">${carMark(key)}</button>`
-  ).join('');
-
-  return `
-    <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
-      <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
-      <div class="pcard-fields">
-        <label class="field-label"><span>Player</span>
-          <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
-        <span class="field-label"><span>Looking for</span></span>
-        <div class="car-choice">${choices}</div>
-        <div class="swatches">${swatches}</div>
-        ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove player</button>` : ''}
-      </div>
-    </div>`;
+function openLibrary(playerId) {
+  const p = findPlayer(playerId);
+  openModal(`A car for ${p.name || 'your spotter'}`, `<p class="hint">Ten familiar faces for English roads. Any colour or generation of your chosen model counts.</p>
+    <div class="library-tools"><input class="field" id="car-search" type="search" placeholder="Find a car…" aria-label="Search car library"><select id="car-filter" aria-label="Filter cars"><option value="">All cars</option><option>Small car</option><option>Hatchback</option><option>SUV</option><option>Saloon</option></select></div>
+    <div class="library-grid" id="library-grid"></div><p class="hint library-help">Illustrations show one example of each model. The car’s colour does not affect its points.</p>`, 'library');
+  const render = () => {
+    const query = $('#car-search').value.toLowerCase().trim();
+    const type = $('#car-filter').value;
+    const keys = CAR_ORDER.filter(key => CARS[key].label.toLowerCase().includes(query) && (!type || CARS[key].type === type));
+    $('#library-grid').innerHTML = keys.length ? keys.map(key => `<button class="library-option" data-library-car="${key}" aria-pressed="${p.car === key}">${carMark(key)}<b>${carLabel(key)}</b><small>${CARS[key].type} · ${state.settings.values[key] || CARS[key].value} rarity pts</small></button>`).join('') : '<p class="hint">No matches. Try a make, like Ford or Tesla.</p>';
+    $$('[data-library-car]').forEach(el => el.onclick = () => { p.car = el.dataset.libraryCar; save(); renderEditor(); modalReturnFocus = $(`[data-pick="${p.id}"]`); closeModal(); });
+  };
+  $('#car-search').oninput = render; $('#car-filter').onchange = render; render();
 }
-
-function findPlayer(id) { return state.players.find((p) => p.id === id); }
-
-function addPlayer() {
-  const used = state.players.map((p) => p.color);
-  const color = COLORS.find((c) => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
-  state.players.push({
-    id: uid(), name: '', car: 'model-y', color,
-    trip: 0, total: 0, wins: 0,
-  });
-  save();
-  renderEditor();
-  const cards = $$('.pcard');
-  cards[cards.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
-  cards[cards.length - 1].querySelector('[data-name]').focus();
+function startTrip(swap = false) {
+  if (state.tripStart) return;
+  if (swap) Game.swap(state);
+  Game.start(state, CARS);
+  renderBoard(); showScreen('screen-game'); startTimer(); save();
 }
-
-/* ------------------------------ game screen ------------------------------ */
-function startTrip() {
-  if (state.lastTrip) {
-    // The previous journey has been banked — this is the next one.
-    state.tripNumber += 1;
-    state.lastTrip = null;
-  }
-  state.players.forEach((p, i) => {
-    if (!p.name.trim()) p.name = `Player ${i + 1}`;
-    p.trip = 0;
-  });
-  state.tripStart = Date.now();
-  undoStack = [];
-  save();
-  renderBoard();
-  showScreen('screen-game');
-  startTimer();
-}
-
 function renderBoard() {
-  const board = $('#board');
-  board.dataset.count = state.players.length;
-  board.innerHTML = state.players.map((p) => `
-    <div class="panel sheet" style="--c:${p.color}" data-panel="${p.id}" role="button" tabindex="0"
-         aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
-      <span class="mount-tag">${escapeHtml(p.name)}</span>
-      ${carMark(p.car, 'panel-car')}
-      <div class="panel-score" data-score="${p.id}">${p.trip}</div>
-      <div class="panel-target">
-        <span class="panel-total">All-time ${p.total}</span>
-        <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
-      </div>
-    </div>`).join('');
-
+  $('#board').dataset.count = state.players.length;
+  $('#board').innerHTML = state.players.map(p => `<article class="panel" style="--c:${p.color}" data-panel="${p.id}">
+    <button class="spot-button" data-spot="${p.id}" aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
+      <span class="panel-name"><span class="player-dot"></span>${escapeHtml(p.name)}</span><span class="panel-model">${carLabel(p.car)}</span>
+      <span class="panel-art">${carMark(p.car)}</span><span class="score-line"><span class="panel-score" data-score="${p.id}">${p.tripPoints}</span><span class="score-unit">points</span></span>
+      <span class="spot-label">Spotted! +${state.tripRules.mode === 'rarity' ? state.tripRules.values[p.car] : 1}</span>
+    </button><div class="panel-bottom"><span class="panel-detail" data-detail="${p.id}"></span><button class="btn panel-minus" data-minus="${p.id}" aria-label="Undo last sighting for ${escapeHtml(p.name)}">− Undo</button></div></article>`).join('');
+  $$('[data-spot]').forEach(el => el.onclick = () => score(el.dataset.spot));
+  $$('[data-minus]').forEach(el => el.onclick = () => unscore(el.dataset.minus));
   $('#trip-number').textContent = state.tripNumber;
-  renderStandings();
-  layoutPanels();
-
-  board.querySelectorAll('[data-panel]').forEach((el) => {
-    el.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('[data-minus]')) return;
-      score(el.dataset.panel, e);
-    });
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); score(el.dataset.panel); }
-    });
+  $('#game-mode').textContent = state.tripRules.mode === 'race' ? `First to ${state.tripRules.target}` : state.tripRules.mode === 'rarity' ? 'Rarity points' : 'Classic';
+  updateGame();
+}
+function leadText() {
+  const ranked = [...state.players].sort((a, b) => b.tripPoints - a.tripPoints);
+  const top = ranked[0].tripPoints;
+  if (!top) return { title: 'Off we go!', detail: 'Who will spot the first car?' };
+  if (ranked.length === 1) return { title: `${top} points spotted`, detail: 'Every car adds to your story.' };
+  const leaders = ranked.filter(p => p.tripPoints === top);
+  if (leaders.length > 1) return { title: 'All square!', detail: `${leaders.map(p => p.name).join(' & ')} on ${top} points` };
+  const gap = top - ranked[1].tripPoints;
+  return { title: `${ranked[0].name} leads by ${gap}`, detail: `${ranked[0].tripPoints}–${ranked[1].tripPoints} · plenty more to spot` };
+}
+function teamMarkup() {
+  const target = state.tripRules.teamTarget;
+  if (!target) return '';
+  const spots = state.players.reduce((sum, p) => sum + p.trip, 0);
+  return `<div class="team-card"><p class="eyebrow">Better together</p><h3>${spots >= target ? 'Team target reached!' : `Let’s spot ${target}`}</h3><progress max="${target}" value="${Math.min(spots, target)}" aria-label="Team sightings"></progress><small>${spots} / ${target} cars together${spots >= target ? ' · You did it!' : ''}</small></div>`;
+}
+function standingsMarkup() {
+  const ranked = [...state.players].sort((a, b) => b.points - a.points || b.wins - a.wins);
+  return ranked.map(p => `<li class="standing"><span class="player-dot" style="--c:${p.color}"></span><span class="standing-who"><b>${escapeHtml(p.name)}</b><small>${p.total} cars · ${p.wins} ${p.wins === 1 ? 'win' : 'wins'}</small></span><span class="standing-total">${p.points}</span></li>`).join('');
+}
+function updateGame() {
+  state.players.forEach(p => {
+    const score = $(`[data-score="${p.id}"]`);
+    if (score) score.textContent = p.tripPoints;
+    const detail = $(`[data-detail="${p.id}"]`);
+    if (detail) detail.textContent = `${p.trip} ${p.trip === 1 ? 'car' : 'cars'} · best ${p.bests[p.car] || 0}`;
+    const minus = $(`[data-minus="${p.id}"]`); if (minus) minus.disabled = !p.trip;
   });
-
-  board.querySelectorAll('[data-minus]').forEach((el) => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      unscore(el.dataset.minus);
-    });
-  });
+  const lead = leadText();
+  $('#live-leader').textContent = lead.title; $('#rail-leader').textContent = lead.title; $('#rail-gap').textContent = lead.detail;
+  $('#rail-team').innerHTML = teamMarkup();
+  const target = state.tripRules.teamTarget;
+  const spots = state.players.reduce((sum, p) => sum + p.trip, 0);
+  $('#compact-team').textContent = target ? `${spots >= target ? '✓ Team target!' : 'Together'} ${spots}/${target} cars` : '';
+  $('#standings-list').innerHTML = standingsMarkup();
+  $('#standings-foot').textContent = `${state.journeys.length} journeys recorded · wins awarded at the finish`;
+  const bonus = state.tripRules.bonusCar;
+  $('#btn-bonus').hidden = !bonus;
+  $('#btn-bonus').textContent = bonus ? `${carLabel(bonus)} +3` : 'Bonus +3';
+  $('#rail-bonus').innerHTML = bonus ? `<div class="bonus-card"><p class="eyebrow">Shared bonus · +3</p><h3>${carLabel(bonus)}</h3><button class="btn" id="rail-claim">We spotted one!</button></div>` : '';
+  if ($('#rail-claim')) $('#rail-claim').onclick = openBonus;
 }
-
-/* The running record, kept in view while playing rather than saved for the
-   end: on a tablet in landscape there is room for it beside the board. */
-function renderStandings() {
-  const list = $('#standings-list');
-  if (!list) return;
-  const ranked = [...state.players].sort((a, b) => b.total - a.total || b.wins - a.wins);
-  list.innerHTML = ranked.map((p, i) => `
-    <li class="standing ${i === 0 && p.total > 0 ? 'is-leader' : ''}" style="--c:${p.color}">
-      <span class="standing-rank">${i + 1}</span>
-      <span class="standing-face">${carMark(p.car, 'standing-mark')}</span>
-      <span class="standing-who">
-        <b>${escapeHtml(p.name)}</b>
-        <small>${p.wins} ${p.wins === 1 ? 'win' : 'wins'}${p.trip ? ` · +${p.trip} today` : ''}</small>
-      </span>
-      <span class="standing-total">${p.total}</span>
-    </li>`).join('');
-  const n = state.journeys.length;
-  $('#standings-foot').textContent = `${n} ${n === 1 ? 'journey' : 'journeys'} on record`;
+function score(id, bonus = false) {
+  const event = Game.add(state, id, bonus);
+  if (!event) return;
+  const saved = save(); updateGame();
+  const panel = $(`[data-panel="${id}"]`);
+  if (panel) { panel.classList.remove('is-hit'); void panel.offsetWidth; panel.classList.add('is-hit'); }
+  blip(bonus ? 880 : 660);
+  if (Game.raceWon(state)) { endTrip(); return; }
+  if (saved) toast(`${findPlayer(id).name}: ${carLabel(event.car)} +${event.points}`, () => unscore(id, event.id));
 }
-
-function layoutPanels() {
-  $$('.panel').forEach((el) => {
-    const r = el.getBoundingClientRect();
-    el.classList.toggle('is-wide', r.width > r.height * 1.05);
-  });
+function unscore(id, eventId) {
+  const event = Game.remove(state, id, eventId);
+  if (!event) return;
+  const saved = save(); updateGame(); blip(240);
+  if (saved) toast(`${findPlayer(id).name}: ${carLabel(event.car)} removed`, null, 3000);
 }
-
-function score(id, event) {
-  const p = findPlayer(id);
-  if (!p) return;
-  p.trip += 1;
-  p.total += 1;
-  undoStack.push(id);
-  save();
-  paintScore(p);
-  renderStandings();
-
-  const panel = document.querySelector(`[data-panel="${id}"]`);
-  if (panel) {
-    panel.classList.remove('is-hit');
-    void panel.offsetWidth; // restart the animation
-    panel.classList.add('is-hit');
-    const rect = panel.getBoundingClientRect();
-    const x = event ? event.clientX - rect.left : rect.width / 2;
-    const y = event ? event.clientY - rect.top : rect.height / 2;
-    spawn(panel, 'ripple', x, y);
-    spawn(panel, 'floater', x, y, '+1');
-  }
-
-  if (navigator.vibrate) navigator.vibrate(18);
-  blip(660);
+function openBonus() {
+  const key = state.tripRules.bonusCar; if (!key) return;
+  openModal('Who spotted the bonus?', `<div class="bonus-preview">${carMark(key)}<div><p class="eyebrow">Shared target · +3 points</p><h3>${carLabel(key)}</h3><p class="hint">${CARS[key].hint}</p></div></div><p class="hint">One claim per car. Give the points to whoever spotted it first.</p><div class="claim-buttons">${state.players.map(p => `<button class="btn" style="--c:${p.color}" data-claim="${p.id}">${escapeHtml(p.name)} +3</button>`).join('')}</div>`);
+  $$('[data-claim]').forEach(el => el.onclick = () => { closeModal(); score(el.dataset.claim, true); });
 }
-
-function unscore(id) {
-  const p = findPlayer(id);
-  if (!p || p.trip <= 0) return;
-  p.trip -= 1;
-  p.total = Math.max(0, p.total - 1);
-  const i = undoStack.lastIndexOf(id);
-  if (i > -1) undoStack.splice(i, 1);
-  save();
-  paintScore(p);
-  renderStandings();
-  blip(240);
-}
-
-function paintScore(p) {
-  const el = document.querySelector(`[data-score="${p.id}"]`);
-  if (!el) return;
-  el.textContent = p.trip;
-  el.classList.remove('bump');
-  void el.offsetWidth;
-  el.classList.add('bump');
-  const panel = el.closest('.panel');
-  const total = panel && panel.querySelector('.panel-total');
-  if (total) total.textContent = `All-time ${p.total}`;
-}
-
-function spawn(panel, cls, x, y, text) {
-  const el = document.createElement('span');
-  el.className = cls;
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
-  if (text) el.textContent = text;
-  panel.appendChild(el);
-  setTimeout(() => el.remove(), 900);
-}
-
-function startTimer() {
-  stopTimer();
-  const tick = () => {
-    $('#trip-timer').textContent = fmtDuration(Date.now() - (state.tripStart || Date.now()));
-  };
-  tick();
-  timerId = setInterval(tick, 1000);
-}
-function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; }
-
-/* ------------------------------ results ------------------------------ */
-function endTrip() {
-  stopTimer();
-  const ranked = [...state.players].sort((a, b) => b.trip - a.trip);
-  const top = ranked[0] ? ranked[0].trip : 0;
-  const winners = ranked.filter((p) => p.trip === top && top > 0);
-
-  winners.forEach((w) => { findPlayer(w.id).wins += 1; });
-
-  state.lastTrip = {
-    number: state.tripNumber,
-    duration: state.tripStart ? Date.now() - state.tripStart : 0,
-    endedAt: Date.now(),
-    scores: state.players.map((p) => ({
-      id: p.id, name: p.name, car: p.car, color: p.color, score: p.trip,
-    })),
-    winnerIds: winners.map((w) => w.id),
-  };
-  state.journeys.push(state.lastTrip);
-  if (state.journeys.length > MAX_JOURNEYS) state.journeys = state.journeys.slice(-MAX_JOURNEYS);
-  state.tripStart = null;
-  save();
-
-  showResults();
-}
-
-function showResults() {
+function startTimer() { clearInterval(timerId); const tick = () => { $('#trip-timer').textContent = fmtDuration(Date.now() - state.tripStart); }; tick(); timerId = setInterval(tick, 1000); }
+function endTrip() { if (!state.tripStart) return; clearInterval(timerId); Game.finish(state); showResults(true); save(); }
+function showResults(celebrate = false, archive = false) {
   const t = state.lastTrip;
-  const kicker = $('#results-kicker');
-  const winner = $('#results-winner');
-  const sub = $('#results-sub');
-
-  if (!t || !t.winnerIds.length) {
-    kicker.textContent = 'Journey complete';
-    winner.textContent = 'No spots!';
-    sub.textContent = 'Nobody saw a thing. Next time.';
-  } else if (t.winnerIds.length > 1) {
-    const names = t.scores.filter((s) => t.winnerIds.includes(s.id)).map((s) => s.name);
-    kicker.textContent = `Journey No. ${t.number} · ${fmtDuration(t.duration)}`;
-    winner.textContent = "It's a tie!";
-    sub.textContent = `${names.join(' & ')} — ${Math.max(...t.scores.map((s) => s.score))} each`;
-  } else {
-    const w = t.scores.find((s) => s.id === t.winnerIds[0]);
-    kicker.textContent = `Journey No. ${t.number} · ${fmtDuration(t.duration)}`;
-    winner.textContent = `${w.name} wins!`;
-    sub.textContent = `${w.score} × ${carLabel(w.car)}`;
-  }
-
-  setTab('trip');
-  showScreen('screen-results');
-  runConfetti();
+  const winners = t ? t.scores.filter(p => t.winnerIds.includes(p.id)) : [];
+  $('#results-kicker').textContent = archive ? 'The family record' : `Journey ${t?.number || state.tripNumber} · ${fmtDuration(t?.duration || 0)}`;
+  $('#results-winner').textContent = archive ? 'Our road book' : winners.length > 1 ? 'It’s a tie!' : winners.length ? `${winners[0].name} wins!` : 'A quiet journey';
+  const scores = t ? [...t.scores].sort((a, b) => b.score - a.score) : [];
+  $('#results-sub').textContent = archive ? `${state.journeys.length} journeys and counting` : scores.length ? `${scores.map(s => s.score).join(' – ')} points${winners.length ? ' · well spotted!' : ' · another adventure awaits'}` : 'Your next adventure starts here.';
+  $('#result-cards').innerHTML = !archive && t ? t.scores.map(s => `<div class="result-card" style="--c:${s.color}">${carMark(s.car)}<b>${escapeHtml(s.name)}</b><strong>${s.score}</strong><small>${s.spots ?? s.score} cars spotted</small></div>`).join('') : '';
+  const team = t?.rules?.teamTarget;
+  const total = t?.scores.reduce((sum, s) => sum + (s.spots ?? s.score), 0) || 0;
+  $('#result-highlights').innerHTML = !archive && t ? `${team && total >= team ? `<p>✓ Team challenge complete · ${total} cars together!</p>` : ''}${(t.highlights || []).map(h => `<p>☆ ${escapeHtml(h.name)}${h.first ? '’s first record' : '’s new personal best'}: ${h.count} ${carLabel(h.car)} spots</p>`).join('')}` : '';
+  $('#btn-reopen').hidden = archive || !Game.canReopen(state);
+  $('#btn-swap').hidden = state.players.length < 2;
+  $('#btn-new-trip').textContent = archive ? 'Begin journey →' : 'Play again →';
+  $('[data-tab="trip"]').hidden = !t;
+  setTab(archive || matchMedia('(min-width:1200px)').matches ? 'all' : 'trip'); showScreen('screen-results');
+  if (celebrate && winners.length) runConfetti();
 }
-
 function setTab(which) {
-  $$('.tab').forEach((t) => t.classList.toggle('is-active', t.dataset.tab === which));
-  renderLeaderboard(which);
-}
-
-function renderLeaderboard(which) {
+  currentTab = which;
+  $$('.tab').forEach(el => { el.classList.toggle('is-active', el.dataset.tab === which); el.setAttribute('aria-pressed', el.dataset.tab === which); });
   const list = $('#leaderboard');
-  let rows;
-
   if (which === 'log') {
-    renderJourneyLog(list);
+    list.innerHTML = [...state.journeys].reverse().map(j => {
+      const winners = j.scores.filter(s => j.winnerIds.includes(s.id));
+      const title = winners.length > 1 ? `${winners.map(s => s.name).join(' & ')} tied` : winners.length ? `${winners[0].name} won` : 'No spots this time';
+      return `<li class="log-row"><span class="eyebrow">Journey ${j.number} · ${new Date(j.endedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · ${fmtDuration(j.duration)}</span><b>${escapeHtml(title)}</b><small>${j.scores.map(s => `${escapeHtml(s.name)} ${s.score} pts`).join(' · ')}</small></li>`;
+    }).join('') || '<li class="lb-empty">Your first journey will be recorded here.</li>';
     return;
   }
-
-  if (which === 'trip') {
-    const t = state.lastTrip;
-    const scores = t ? [...t.scores] : state.players.map((p) => ({ ...p, score: p.trip }));
-    rows = scores.sort((a, b) => b.score - a.score).map((s) => ({
-      name: s.name, sub: carLabel(s.car), color: s.color, car: s.car, value: s.score,
-    }));
-  } else {
-    rows = [...state.players].sort((a, b) => b.total - a.total).map((p) => ({
-      name: p.name,
-      sub: `${carLabel(p.car)} · ${p.wins} ${p.wins === 1 ? 'journey' : 'journeys'} won`,
-      color: p.color, car: p.car, value: p.total,
-    }));
-  }
-
-  list.innerHTML = rows.map((r, i) => `
-    <li class="lb-row ${i === 0 ? 'is-first' : ''}" style="--c:${r.color}">
-      <span class="lb-rank">${i === 0 ? '1st' : `${i + 1}${['th', 'st', 'nd', 'rd'][(i + 1) % 10] || 'th'}`}</span>
-      <span class="lb-car">${carMark(r.car, 'lb-mark')}</span>
-      <span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span>
-      <span class="lb-score">${r.value}</span>
-    </li>`).join('');
+  let rows = which === 'trip' && state.lastTrip ? state.lastTrip.scores.map(s => ({ ...s, value: s.score, sub: `${carLabel(s.car)} · ${s.spots ?? s.score} cars` })) : state.players.map(p => ({ ...p, value: p.points, sub: `${p.total} cars spotted · ${p.wins} journeys won` }));
+  rows.sort((a, b) => b.value - a.value);
+  list.innerHTML = rows.map((r, i) => `<li class="lb-row"><span class="lb-rank">${rows.findIndex(s => s.value === r.value) + 1}</span><span class="lb-car">${carMark(r.car)}</span><span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span><span class="lb-score">${r.value}<small>points</small></span></li>`).join('');
 }
-
-/* Past journeys, newest first: the point of keeping the log is being
-   able to say "you won that one on the way to Grandma's". */
-function renderJourneyLog(list) {
-  const journeys = [...state.journeys].reverse();
-  if (!journeys.length) {
-    list.innerHTML = '<li class="lb-empty">No journeys recorded yet.</li>';
-    return;
-  }
-  list.innerHTML = journeys.map((j) => {
-    const ranked = [...j.scores].sort((a, b) => b.score - a.score);
-    const winners = j.scores.filter((sc) => j.winnerIds.includes(sc.id));
-    const won = winners.length > 1 ? 'Tied' : winners.length ? winners[0].name : 'No spots';
-    const colour = winners.length === 1 ? winners[0].color : 'var(--line)';
-    const tally = ranked.map((sc) => `${escapeHtml(sc.name)} ${sc.score}`).join(' · ');
-    return `
-      <li class="log-row" style="--c:${colour}">
-        <span class="log-date">${fmtDate(j.endedAt)}</span>
-        <span class="log-body">
-          <b>${escapeHtml(won)}${winners.length ? ' won' : ''}</b>
-          <small>${tally}</small>
-        </span>
-        <span class="log-meta">No. ${j.number}<i>${fmtDuration(j.duration)}</i></span>
-      </li>`;
-  }).join('');
+function applyTheme() {
+  const dark = state.theme === 'dark'; document.documentElement.dataset.theme = state.theme;
+  $$('[data-theme-toggle]').forEach(el => { el.textContent = dark ? 'Day mode' : 'Night mode'; el.setAttribute('aria-label', `Switch to ${dark ? 'day' : 'night'} mode`); });
+  $('meta[name="theme-color"]').content = dark ? '#171d1c' : '#eef0e7';
 }
-
-/* ------------------------------ confetti ------------------------------ */
-function runConfetti() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const canvas = $('#confetti');
-  const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-  const palette = state.players.map((p) => p.color).concat(['#a13a2e', '#3f6b2e', '#8a5a12']);
-  const bits = Array.from({ length: 120 }, () => ({
-    x: Math.random() * w,
-    y: -Math.random() * h * 0.6,
-    vx: (Math.random() - 0.5) * 1.6,
-    vy: 2 + Math.random() * 3.4,
-    size: 5 + Math.random() * 7,
-    rot: Math.random() * Math.PI,
-    spin: (Math.random() - 0.5) * 0.28,
-    color: palette[Math.floor(Math.random() * palette.length)],
-  }));
-
-  const started = performance.now();
-  (function frame(now) {
-    ctx.clearRect(0, 0, w, h);
-    const life = now - started;
-    bits.forEach((b) => {
-      b.x += b.vx;
-      b.y += b.vy;
-      b.rot += b.spin;
-      ctx.save();
-      ctx.translate(b.x, b.y);
-      ctx.rotate(b.rot);
-      ctx.globalAlpha = Math.max(0, 1 - life / 4200);
-      ctx.fillStyle = b.color;
-      ctx.fillRect(-b.size / 2, -b.size / 2, b.size, b.size * 0.6);
-      ctx.restore();
-    });
-    if (life < 4200 && $('#screen-results').classList.contains('is-active')) {
-      requestAnimationFrame(frame);
-    } else {
-      ctx.clearRect(0, 0, w, h);
-    }
-  })(started);
-}
-
-/* ------------------------------ sound ------------------------------ */
-let audioCtx = null;
+function toggleTheme() { state.theme = state.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); }
+function soundLabel() { $('#btn-sound').textContent = state.sound ? 'Sound on' : 'Sound off'; $('#btn-sound').setAttribute('aria-pressed', state.sound); }
 function blip(freq) {
   if (!state.sound) return;
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
-  } catch (err) { /* audio is a nicety, never a blocker */ }
+  try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'triangle'; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(.001, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(.07, audioCtx.currentTime + .01); gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .14);
+    osc.connect(gain).connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + .16);
+  } catch { /* Sound must never block scoring. */ }
 }
-
-/* ------------------------------ archive ------------------------------ */
-/* localStorage can be evicted; a granted persistence request means the
-   browser keeps the archive until it is deleted deliberately. */
-function requestPersistence() {
-  if (navigator.storage && navigator.storage.persist) {
-    navigator.storage.persist().catch(() => {});
+async function requestWakeLock() { try { if ('wakeLock' in navigator && !wakeLock) { const lock = await navigator.wakeLock.request('screen'); if (!state.tripStart) { lock.release(); return; } wakeLock = lock; lock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
+function releaseWakeLock() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
+function openModal(title, html, cls = '') {
+  if (!$('#modal').hidden) closeModal();
+  modalReturnFocus = document.activeElement;
+  $('#modal-title').textContent = title; $('#modal-content').innerHTML = html; $('.modal-card').className = `modal-card ${cls}`;
+  $('#modal').hidden = false; $$('.screen').forEach(el => el.inert = true); document.body.style.overflow = 'hidden'; $('#modal-close').focus();
+}
+function closeModal() { $('#modal').hidden = true; $$('.screen').forEach(el => el.inert = false); document.body.style.overflow = ''; if (modalCleanup) { modalCleanup(); modalCleanup = null; } if (modalReturnFocus?.isConnected) modalReturnFocus.focus(); }
+function confirmDialog(title, body, onOk, label = 'Finish journey') {
+  openModal(title, `<p>${escapeHtml(body)}</p><div class="modal-actions"><button class="btn" id="confirm-cancel">Keep going</button><button class="btn btn-primary" id="confirm-ok">${escapeHtml(label)}</button></div>`);
+  $('#confirm-cancel').onclick = closeModal; $('#confirm-ok').onclick = () => { closeModal(); onOk(); };
+}
+function dismissToast() { clearTimeout(toastTimer); $('#toast').hidden = true; toastAction = null; }
+function toast(text, undo = null, duration = 7000) { clearTimeout(toastTimer); $('#toast-text').textContent = text; $('#toast-undo').hidden = !undo; toastAction = undo; $('#toast').hidden = false; if (duration) toastTimer = setTimeout(dismissToast, duration); }
+function openGameStandings() {
+  openModal('The journey so far', `<h3>${escapeHtml(leadText().title)}</h3>${teamMarkup()}<h3 style="margin-top:24px">Overall points</h3><ol class="standings-list">${standingsMarkup()}</ol><p class="hint" style="margin-top:16px">Points include this journey. Wins are awarded when you finish.</p>`);
+}
+function openMenu() {
+  openModal('Journey menu', `<div class="menu-list"><button class="btn" id="menu-theme">${state.theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'}</button><button class="btn" id="menu-rules">Our rules & spotting tips</button><p class="hint" id="offline-status">${navigator.onLine ? 'Connected' : 'Offline'} · scores save on this device</p></div>`);
+  $('#menu-theme').onclick = () => { toggleTheme(); $('#menu-theme').textContent = state.theme === 'dark' ? 'Switch to day mode' : 'Switch to night mode'; };
+  $('#menu-rules').onclick = () => openModal('Our rules', `<p>Any colour or generation of the named model counts. Count each car once, and agree who spotted it first.</p><p class="hint" style="margin:14px 0">${state.tripRules.mode === 'race' ? `First to ${state.tripRules.target} points wins.` : state.tripRules.mode === 'rarity' ? 'Your point values are fixed for this journey.' : 'Each car earns one point.'} ${state.tripRules.bonusCar ? 'A bonus car earns 3 points. Claim it for one player only.' : ''}</p>${state.players.map(p => `<div class="log-row"><b>${escapeHtml(p.name)} · ${carLabel(p.car)}</b><small>${CARS[p.car].hint}</small></div>`).join('')}`);
+  if ('caches' in window) caches.match('assets/cars/fiat-500.webp', { cacheName: 'spotted-v9' }).then(ready => { const el = $('#offline-status'); if (el) el.textContent = ready ? 'Ready offline · scores save on this device' : 'Scores save on this device. Offline artwork is still preparing.'; }).catch(() => {});
+}
+function runConfetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas = $('#confetti'), ctx = canvas.getContext('2d'); if (!ctx) return;
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  const bits = Array.from({ length: 70 }, () => ({ x: Math.random() * canvas.width, y: -Math.random() * canvas.height, vy: 70 + Math.random() * 120, c: COLORS[Math.floor(Math.random() * COLORS.length)], angle: Math.random() * 6 }));
+  const start = performance.now(); let last = start;
+  function frame(now) { const elapsed = (now - last) / 1000; last = now; ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = Math.max(0, 1 - (now - start) / 3000);
+    bits.forEach(b => { b.y += b.vy * elapsed; b.angle += elapsed; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.angle); ctx.fillStyle = b.c; ctx.fillRect(-3, -3, 6, 10); ctx.restore(); });
+    if (now - start < 3000 && $('#screen-results').classList.contains('is-active')) requestAnimationFrame(frame); else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  } requestAnimationFrame(frame);
+}
+$$('[data-theme-toggle]').forEach(el => el.onclick = toggleTheme);
+$('#btn-add-player').onclick = () => { if (state.players.length >= 6) return; state.players.push(Game.player('', 'fiesta', COLORS[state.players.length % COLORS.length])); save(); renderEditor(); const input = $$('[data-name]').at(-1); input.focus(); input.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+$('#btn-start').onclick = () => startTrip();
+$('#btn-new-trip').onclick = () => startTrip();
+$('#btn-swap').onclick = () => startTrip(true);
+$('#btn-edit-players').onclick = () => { renderEditor(); showScreen('screen-setup'); };
+$('#btn-reopen').onclick = () => { if (Game.reopen(state)) { renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Journey reopened. You can undo the last sighting.'); } };
+$('#btn-view-alltime').onclick = () => showResults(false, true);
+$('#btn-end').onclick = () => confirmDialog('Finish this journey?', 'Save the result and celebrate your spots. You can reopen it before starting another journey.', endTrip);
+$('#btn-sound').onclick = () => { state.sound = !state.sound; save(); soundLabel(); if (state.sound) blip(660); };
+$('#btn-menu').onclick = openMenu;
+$('#btn-game-standings').onclick = openGameStandings;
+$('#btn-bonus').onclick = openBonus;
+$('#modal-close').onclick = closeModal;
+$('#modal').onclick = e => { if (e.target === $('#modal')) closeModal(); };
+$('#toast-undo').onclick = () => { const action = toastAction; dismissToast(); if (action) action(); };
+$('#toast-dismiss').onclick = dismissToast;
+$$('.tab').forEach(el => el.onclick = () => setTab(el.dataset.tab));
+$('#setting-mode').onchange = e => { state.settings.mode = e.target.value; save(); renderEditor(); };
+$('#setting-target').onchange = e => { state.settings.target = Number(e.target.value); save(); };
+$('#setting-team').onchange = e => { state.settings.teamTarget = Number(e.target.value); save(); };
+$('#setting-bonus').onchange = e => { state.settings.bonus = e.target.checked; save(); };
+$('#btn-reset-all').onclick = () => confirmDialog('Reset the whole archive?', 'Every score, win, personal best and recorded journey will be erased. Your players and chosen cars stay.', () => {
+  state.players.forEach(p => { p.trip = p.total = p.wins = p.points = p.tripPoints = p.carSpots = 0; p.bests = {}; });
+  state.tripNumber = 1; state.tripStart = null; state.lastTrip = null; state.journeys = []; state.events = []; state.tripRules = null; save(); renderEditor();
+}, 'Reset archive');
+document.addEventListener('keydown', e => {
+  if ($('#modal').hidden) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+  if (e.key === 'Tab') {
+    const items = Array.from($('#modal').querySelectorAll('button:not([disabled]),input,select,a[href]')).filter(el => !el.hidden && el.getClientRects().length);
+    const first = items[0], last = items.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
-}
-
-/* ------------------------------ theme ------------------------------ */
-function applyTheme() {
-  document.documentElement.dataset.theme = state.theme;
-  const btn = $('#btn-theme');
-  const dark = state.theme === 'dark';
-  btn.setAttribute('aria-label', dark ? 'Switch to the light setting' : 'Switch to the dark setting');
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#14160f' : '#eef0e7');
-}
-
-/* ------------------------------ wake lock ------------------------------ */
-async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator && !wakeLock) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
-    }
-  } catch (err) { /* unsupported or denied — fine */ }
-}
-function releaseWakeLock() {
-  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-}
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && $('#screen-game').classList.contains('is-active')) requestWakeLock();
 });
-
-/* ------------------------------ modal ------------------------------ */
-function confirmDialog(title, body, onOk) {
-  $('#modal-title').textContent = title;
-  $('#modal-body').textContent = body;
-  $('#modal').hidden = false;
-  const ok = $('#modal-ok');
-  const cancel = $('#modal-cancel');
-  const close = () => {
-    $('#modal').hidden = true;
-    ok.removeEventListener('click', accept);
-    cancel.removeEventListener('click', close);
-  };
-  const accept = () => { close(); onOk(); };
-  ok.addEventListener('click', accept);
-  cancel.addEventListener('click', close);
-}
-
-/* ------------------------------ wiring ------------------------------ */
-$('#btn-theme').addEventListener('click', () => {
-  state.theme = state.theme === 'dark' ? 'light' : 'dark';
-  save();
-  applyTheme();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.tripStart) requestWakeLock(); });
+// Another tab must not silently replace a running game's scores.
+window.addEventListener('storage', e => {
+  if (e.key !== STORE_KEY) return;
+  clearInterval(timerId);
+  openModal('This road book changed in another tab', '<p>Reload to use the latest saved scores. Keep one game tab open on this device.</p><div class="modal-actions"><button class="btn btn-primary" id="reload-game">Reload game</button></div>');
+  $('#modal-close').hidden = true; $('#reload-game').onclick = () => location.reload();
+  modalCleanup = () => { $('#modal-close').hidden = false; location.reload(); };
 });
-
-$('#btn-add-player').addEventListener('click', addPlayer);
-$('#btn-start').addEventListener('click', startTrip);
-
-$('#btn-view-alltime').addEventListener('click', () => {
-  $('#results-kicker').textContent = 'Standings';
-  $('#results-winner').textContent = 'All-time';
-  const n = state.journeys.length;
-  $('#results-sub').textContent = `${n} ${n === 1 ? 'journey' : 'journeys'} on record`;
-  setTab('all');
-  showScreen('screen-results');
-});
-
-$('#btn-end').addEventListener('click', () => {
-  confirmDialog('End this journey?', 'Trip scores get locked in and the all-time totals are kept.', endTrip);
-});
-
-$('#btn-sound').addEventListener('click', () => {
-  state.sound = !state.sound;
-  save();
-  const btn = $('#btn-sound');
-  btn.textContent = state.sound ? '\u266a' : '\u266a\u0338';
-  btn.classList.toggle('is-off', !state.sound);
-  if (state.sound) blip(660);
-});
-
-$$('.tab').forEach((t) => t.addEventListener('click', () => setTab(t.dataset.tab)));
-
-$('#btn-new-trip').addEventListener('click', startTrip);
-
-$('#btn-edit-players').addEventListener('click', () => {
-  renderEditor();
-  showScreen('screen-setup');
-});
-
-$('#btn-reset-all').addEventListener('click', () => {
-  confirmDialog('Reset the whole archive?', 'Every score, win and recorded journey is erased. The players stay.', () => {
-    state.players.forEach((p) => { p.trip = 0; p.total = 0; p.wins = 0; });
-    state.tripNumber = 1;
-    state.tripStart = null;
-    state.lastTrip = null;
-    state.journeys = [];
-    undoStack = [];
-    save();
-    renderEditor();
-  });
-});
-
-/* ------------------------------ boot ------------------------------ */
-(function boot() {
-  applyTheme();
-  requestPersistence();
-
-  const soundBtn = $('#btn-sound');
-  soundBtn.textContent = state.sound ? '\u266a' : '\u266a\u0338';
-  soundBtn.classList.toggle('is-off', !state.sound);
-
-  renderEditor();
-
-  if (state.tripStart) {
-    // A journey was in progress when the app was closed — pick it back up.
-    renderBoard();
-    showScreen('screen-game');
-    startTimer();
-  } else {
-    showScreen('screen-setup');
-  }
-
-  window.addEventListener('orientationchange', () => setTimeout(layoutPanels, 250));
-  window.addEventListener('resize', () => {
-    layoutPanels();
-    if ($('#screen-results').classList.contains('is-active')) {
-      const c = $('#confetti');
-      c.width = c.clientWidth;
-      c.height = c.clientHeight;
-    }
-  });
-
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
-})();
+applyTheme(); soundLabel(); renderEditor();
+if (state.tripStart) { renderBoard(); showScreen('screen-game'); startTimer(); }
+else if (state.lastTrip) showResults();
+else showScreen('screen-setup');
+if (loadWarning) toast('The saved game could not be read. Your browser copy has not been replaced.', null, 0);
+if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -1,109 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#eef0e7">
-<meta name="description" content="Spotted — a road book for spotting cars on a journey. Tap your sheet, win the trip.">
-<title>Spotted</title>
+<meta name="description" content="Spotted — your family car-spotting road book. Pick a car, collect sightings and make every journey a game.">
+<title>Spotted · Road Book</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
-
-<!-- ───────────────────────── SETUP ───────────────────────── -->
 <section id="screen-setup" class="screen is-active">
   <header class="topbar">
-    <h1 class="logo">
-      <button class="logo-btn" id="btn-theme" type="button" aria-label="Switch to the dark setting" title="Tap the title for the dark setting">spotted<span>.</span><small>Road Book</small></button>
-    </h1>
-    <div class="topbar-actions">
-      <button class="btn btn-ghost" id="btn-view-alltime" type="button">All-time</button>
-    </div>
+    <h1 class="logo">spotted<span>.</span><small>THE FAMILY ROAD BOOK</small></h1>
+    <div class="topbar-actions"><button class="btn" data-theme-toggle>Night mode</button><button class="btn" id="btn-view-alltime">Standings</button></div>
   </header>
-
-  <div class="setup-scroll">
-    <p class="hint">Who is playing, and which car are they looking for?</p>
-    <h2 class="section-title">Players</h2>
+  <main class="setup-scroll">
+    <div class="section-heading"><div><p class="eyebrow">A little competition. A lot to spot.</p><h2>Who’s coming along?</h2></div><span class="edition">England collection · 10 cars</span></div>
     <div id="player-editor" class="player-editor"></div>
-    <button class="btn btn-add" id="btn-add-player" type="button"><span class="plus">+</span> Add player</button>
-  </div>
-
-  <footer class="setup-footer">
-    <button class="btn btn-danger-ghost" id="btn-reset-all" type="button">Reset all</button>
-    <button class="btn btn-primary btn-start" id="btn-start" type="button">Begin journey</button>
-  </footer>
+    <button class="btn btn-add" id="btn-add-player">+ Add player</button>
+    <section class="journey-options" aria-labelledby="options-title">
+      <div><p class="eyebrow">Make it your journey</p><h2 id="options-title">A few friendly rules</h2></div>
+      <div class="option-grid">
+        <label>Game<select id="setting-mode"><option value="classic">Classic · 1 point per car</option><option value="rarity">Rarity · your car’s point value</option><option value="race">Quick round · first to the target</option></select></label>
+        <label id="race-option" hidden>Winning points<select id="setting-target"><option value="5">First to 5</option><option value="10">First to 10</option><option value="20">First to 20</option></select></label>
+        <label>Team challenge<select id="setting-team"><option value="0">Off</option><option value="10">Spot 10 cars together</option><option value="20">Spot 20 cars together</option><option value="50">Spot 50 cars together</option></select></label>
+        <label class="check-option"><input type="checkbox" id="setting-bonus"><span>Shared bonus car<small>A surprise model. Either player can claim +3.</small></span></label>
+      </div>
+      <p class="hint" id="mode-hint">Any colour or generation counts. Count each car once. A passenger can keep the score.</p>
+    </section>
+  </main>
+  <footer class="setup-footer"><button class="btn btn-danger-ghost" id="btn-reset-all">Reset archive</button><button class="btn btn-primary btn-start" id="btn-start">Let’s go →</button></footer>
 </section>
-
-<!-- ───────────────────────── GAME ───────────────────────── -->
 <section id="screen-game" class="screen">
-  <header class="gamebar">
-    <div class="gamebar-left">
-      <span class="trip-label">Journey No. <span id="trip-number">1</span></span>
-      <span class="trip-timer" id="trip-timer">00:00</span>
-    </div>
-    <div class="gamebar-right">
-      <button class="icon-btn" id="btn-sound" type="button" title="Sound" aria-label="Toggle sound">♪</button>
-      <button class="btn btn-end" id="btn-end" type="button">End journey</button>
-    </div>
+  <header class="gamebar"><div class="gamebar-left"><span class="mini-logo">spotted<span>.</span></span><div><span class="eyebrow">Journey <span id="trip-number">1</span></span><span class="trip-timer" id="trip-timer">00:00</span></div><span id="game-mode" class="chip"></span></div>
+    <div class="gamebar-right"><button class="btn" id="btn-sound" aria-pressed="true">Sound on</button><button class="btn" id="btn-menu">Menu</button><button class="btn btn-end" id="btn-end">Finish</button></div>
   </header>
-  <div class="play">
-    <main id="board" class="board"></main>
-    <aside class="standings" id="standings" aria-label="All-time standings">
-      <h2 class="standings-title">All-time</h2>
-      <ol class="standings-list" id="standings-list"></ol>
-      <p class="standings-foot" id="standings-foot"></p>
-    </aside>
-  </div>
+  <div class="play"><main id="board" class="board"></main><aside class="standings" aria-label="Journey and overall standings"><div class="rail-lead"><p class="eyebrow">This journey</p><h2 id="rail-leader">Off we go!</h2><p id="rail-gap"></p></div><div id="rail-team"></div><div id="rail-bonus"></div><h2 class="eyebrow rail-title">Overall points</h2><ol id="standings-list" class="standings-list"></ol><p id="standings-foot" class="hint"></p></aside></div>
+  <footer class="game-footer"><div class="live-summary"><strong id="live-leader">Off we go!</strong><span id="compact-team"></span></div><div class="footer-actions"><button class="btn bonus-shortcut" id="btn-bonus" hidden>Bonus +3</button><button class="btn" id="btn-game-standings">Standings</button></div></footer>
 </section>
-
-<!-- ───────────────────────── RESULTS ───────────────────────── -->
 <section id="screen-results" class="screen">
-  <canvas id="confetti" class="confetti"></canvas>
-  <div class="results-inner">
-    <div class="trophy" id="trophy" aria-hidden="true">
-      <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M32 16h36v20a18 18 0 0 1-36 0z"/>
-        <path d="M32 20H20a10 10 0 0 0 10 14M68 20h12a10 10 0 0 1-10 14"/>
-        <path d="M50 54v14M36 74h28M30 84h40"/>
-      </svg>
-    </div>
-    <p class="results-kicker" id="results-kicker">Journey complete</p>
-    <h2 class="results-winner" id="results-winner">—</h2>
-    <p class="results-sub" id="results-sub"></p>
-
-    <div class="tabs" role="tablist">
-      <button class="tab is-active" data-tab="trip" role="tab" type="button">This journey</button>
-      <button class="tab" data-tab="all" role="tab" type="button">All-time</button>
-      <button class="tab" data-tab="log" role="tab" type="button">Log</button>
-    </div>
-    <ol class="leaderboard" id="leaderboard"></ol>
-
-    <div class="results-actions">
-      <button class="btn btn-primary" id="btn-new-trip" type="button">New journey</button>
-      <button class="btn btn-ghost" id="btn-edit-players" type="button">Edit players</button>
-    </div>
-  </div>
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+  <header class="topbar"><span class="mini-logo">spotted<span>.</span></span><button class="btn" data-theme-toggle>Night mode</button></header>
+  <main class="results-layout"><div class="result-celebration"><div class="trophy" aria-hidden="true"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 16h36v20a18 18 0 0 1-36 0z"/><path d="M32 20H20a10 10 0 0 0 10 14M68 20h12a10 10 0 0 1-10 14"/><path d="M50 54v14M36 74h28M30 84h40"/></svg></div><p class="eyebrow" id="results-kicker"></p><h1 id="results-winner"></h1><p id="results-sub"></p><div id="result-cards" class="result-cards"></div><div id="result-highlights" class="result-highlights"></div></div>
+    <div class="result-record"><div class="tabs" aria-label="Results view"><button class="tab is-active" data-tab="trip" aria-pressed="true">Journey</button><button class="tab" data-tab="all" aria-pressed="false">Overall</button><button class="tab" data-tab="log" aria-pressed="false">Log</button></div><ol class="leaderboard" id="leaderboard"></ol></div></main>
+  <footer class="results-actions"><button class="btn" id="btn-reopen">Reopen journey</button><button class="btn" id="btn-edit-players">Edit players</button><button class="btn" id="btn-swap">Swap cars & play</button><button class="btn btn-primary" id="btn-new-trip">Play again →</button></footer>
 </section>
-
-<!-- ───────────────────────── CONFIRM DIALOG ───────────────────────── -->
-<div class="modal" id="modal" hidden>
-  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <h3 id="modal-title">Are you sure?</h3>
-    <p id="modal-body"></p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="modal-cancel" type="button">Cancel</button>
-      <button class="btn btn-danger" id="modal-ok" type="button">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<script src="cars.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><h2 id="modal-title"></h2><button class="btn" id="modal-close" aria-label="Close dialog">Close</button></div><div id="modal-content"></div></div></div>
+<div class="toast" id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button class="btn" id="toast-undo">Undo</button><button class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification">×</button></div>
+<script src="cars.js?v=9"></script><script src="game.js?v=9"></script><script src="app.js?v=9"></script>
 </body>
 </html>
