@@ -377,3 +377,31 @@ progress::-moz-progress-bar{background:var(--green)}
   .results-actions .btn{min-width:0;font-size:12px}
 }
 @media(max-height:600px) and (min-width:600px){.bonus-shortcut{display:block}}
+
+/* Portrait is a list of equal player rows, including an odd final player. */
+@media(orientation:portrait) and (max-width:900px){
+  #screen-game{min-height:360px}
+  .board,.board[data-count="1"],.board[data-count="3"]{grid-template-columns:minmax(0,1fr);grid-auto-rows:minmax(155px,1fr);padding:6px 14px}
+  .board .panel:last-child{grid-column:auto}
+  .panel + .panel{border-left:0;border-top:1px solid var(--line)}
+  .panel{position:relative}
+  .spot-button{flex:1 1 auto;grid-template-columns:minmax(80px,34%) minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;gap:6px 12px;padding:12px 6px 36px}
+  .panel-art{grid-column:1;grid-row:1/4;min-height:85px}
+  .panel-name{grid-column:2;grid-row:1;justify-self:start;align-self:center;text-align:left}
+  .name-tag{font-size:14px}
+  .panel-model{grid-column:2;grid-row:2;text-align:left;align-self:start;font-size:15px;min-height:0}
+  .score-line{grid-column:3;grid-row:1/4;align-self:center;display:flex;flex-direction:column;align-items:center;gap:4px;margin:0}
+  .panel-score{font-size:54px}
+  .score-unit{font-size:10px}
+  .spot-label{grid-column:2;grid-row:3;align-self:end;font-size:11px;text-align:left}
+  .panel-bottom{position:absolute;bottom:0;right:6px;left:36%;min-height:36px;padding:0}
+  .panel-minus{min-height:36px}
+  .panel-detail{font-size:10px}
+  .gamebar{padding:8px 16px}
+  .trip-timer{font-size:22px}
+  .gamebar .eyebrow{font-size:11px}
+}
+.record-note{display:grid;grid-template-columns:1fr auto;gap:3px 16px;text-align:left;padding:12px 0;border-top:1px solid var(--line);font:16px var(--serif)}
+.record-note .eyebrow{grid-column:1;font-size:10px}
+.record-note>span:not(.eyebrow){grid-column:1;color:var(--muted)}
+.record-note>strong{grid-column:2;grid-row:1/3;align-self:center;font:32px var(--serif)}
