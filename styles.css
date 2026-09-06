@@ -144,6 +144,21 @@ button,input{font:inherit;color:inherit;}
 .lb-score{font:700 22px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
 .results-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
+/* ---------- journey log ---------- */
+.lb-empty{padding:18px 0;border-bottom:1px solid var(--line);font:italic 15px var(--serif);color:var(--muted);}
+.log-row{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:14px;padding:14px 0 14px 14px;border-bottom:1px solid var(--line);border-left:3px solid var(--c);}
+.log-date{font:700 9px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap;}
+.log-body{min-width:0;}
+.log-body b{display:block;font:600 17px/1.25 var(--serif);}
+.log-body small{display:block;font:10px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.log-meta{text-align:right;font:9px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);white-space:nowrap;}
+.log-meta i{display:block;font-style:normal;}
+
+/* ---------- archive ---------- */
+.archive-title{margin-top:34px;}
+.archive-note{margin-bottom:12px;font-size:14px;}
+.archive-actions{display:flex;gap:10px;}
+
 /* ---------- picker and dialogs ---------- */
 .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(34,38,30,.5);}
 .modal[hidden]{display:none;}

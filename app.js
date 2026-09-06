@@ -6,6 +6,10 @@
 
 const STORE_KEY = 'carspotter.v1';
 
+/* Enough journeys to cover years of driving, and still a small enough
+   record that a browser has no reason to evict it. */
+const MAX_JOURNEYS = 500;
+
 /* The archive's per-topic inks: saturated specimen-label colours,
    never pastel chips. */
 const COLORS = [
@@ -19,6 +23,7 @@ const DEFAULT_STATE = () => ({
   theme: 'light',
   tripNumber: 1,
   tripStart: null,
+  journeys: [],   // every finished journey, newest last
   players: [
     { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
     { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
@@ -48,6 +53,7 @@ function load() {
     if (!raw) return DEFAULT_STATE();
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.players)) return DEFAULT_STATE();
+    if (!Array.isArray(parsed.journeys)) parsed.journeys = []; // archives saved before the log existed
     parsed.players.forEach((p) => {
       p.trip = p.trip || 0;
       p.total = p.total || 0;
@@ -80,6 +86,10 @@ function showScreen(id) {
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 function fmtDuration(ms) {
@@ -359,6 +369,8 @@ function endTrip() {
     scores: state.players.map((p) => ({ id: p.id, name: p.name, car: p.car, shape: p.shape, color: p.color, score: p.trip })),
     winnerIds: winners.map((w) => w.id),
   };
+  state.journeys.push(state.lastTrip);
+  if (state.journeys.length > MAX_JOURNEYS) state.journeys = state.journeys.slice(-MAX_JOURNEYS);
   state.tripStart = null;
   save();
 
@@ -401,6 +413,11 @@ function renderLeaderboard(which) {
   const list = $('#leaderboard');
   let rows;
 
+  if (which === 'log') {
+    renderJourneyLog(list);
+    return;
+  }
+
   if (which === 'trip') {
     const t = state.lastTrip;
     const scores = t ? [...t.scores] : state.players.map((p) => ({ ...p, score: p.trip }));
@@ -422,6 +439,32 @@ function renderLeaderboard(which) {
       <span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span>
       <span class="lb-score">${r.value}</span>
     </li>`).join('');
+}
+
+/* Past journeys, newest first: the point of keeping the log is being
+   able to say "you won that one on the way to Grandma's". */
+function renderJourneyLog(list) {
+  const journeys = [...state.journeys].reverse();
+  if (!journeys.length) {
+    list.innerHTML = '<li class="lb-empty">No journeys recorded yet.</li>';
+    return;
+  }
+  list.innerHTML = journeys.map((j) => {
+    const ranked = [...j.scores].sort((a, b) => b.score - a.score);
+    const winners = j.scores.filter((sc) => j.winnerIds.includes(sc.id));
+    const won = winners.length > 1 ? 'Tied' : winners.length ? winners[0].name : 'No spots';
+    const colour = winners.length === 1 ? winners[0].color : 'var(--line)';
+    const tally = ranked.map((sc) => `${escapeHtml(sc.name)} ${sc.score}`).join(' · ');
+    return `
+      <li class="log-row" style="--c:${colour}">
+        <span class="log-date">${fmtDate(j.endedAt)}</span>
+        <span class="log-body">
+          <b>${escapeHtml(won)}${winners.length ? ' won' : ''}</b>
+          <small>${tally}</small>
+        </span>
+        <span class="log-meta">No. ${j.number}<i>${fmtDuration(j.duration)}</i></span>
+      </li>`;
+  }).join('');
 }
 
 /* ------------------------------ confetti ------------------------------ */
@@ -492,6 +535,56 @@ function blip(freq) {
   } catch (err) { /* audio is a nicety, never a blocker */ }
 }
 
+/* ------------------------------ archive ------------------------------ */
+/* localStorage can be evicted; a granted persistence request means the
+   browser keeps the archive until it is deleted deliberately. */
+function requestPersistence() {
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+}
+
+/* The setup screen says plainly what is on record and where it lives. */
+function paintArchiveNote() {
+  const n = state.journeys.length;
+  $('#archive-note').textContent = n
+    ? `${n} ${n === 1 ? 'journey' : 'journeys'} on record, kept in this browser. Export to keep a copy or move it to another device.`
+    : 'Finished journeys are recorded here, kept in this browser. Export to keep a copy or move it to another device.';
+}
+
+function exportArchive() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `car-spotter-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importArchive(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.players)) throw new Error('not a Car Spotter archive');
+      state = Object.assign(DEFAULT_STATE(), parsed);
+      if (!Array.isArray(state.journeys)) state.journeys = [];
+      state.tripStart = null;
+      save();
+      applyTheme();
+      renderEditor();
+      paintArchiveNote();
+      showScreen('screen-setup');
+    } catch (err) {
+      confirmDialog('Could not read that file', 'It does not look like a Car Spotter archive.', () => {});
+    }
+  };
+  reader.readAsText(file);
+}
+
 /* ------------------------------ theme ------------------------------ */
 function applyTheme() {
   document.documentElement.dataset.theme = state.theme;
@@ -537,6 +630,14 @@ function confirmDialog(title, body, onOk) {
 }
 
 /* ------------------------------ wiring ------------------------------ */
+$('#btn-export').addEventListener('click', exportArchive);
+$('#btn-import').addEventListener('click', () => $('#import-file').click());
+$('#import-file').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) importArchive(file);
+  e.target.value = '';
+});
+
 $('#btn-theme').addEventListener('click', () => {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   save();
@@ -554,7 +655,8 @@ $('#btn-start').addEventListener('click', startTrip);
 $('#btn-view-alltime').addEventListener('click', () => {
   $('#results-kicker').textContent = 'Standings';
   $('#results-winner').textContent = 'All-time';
-  $('#results-sub').textContent = `${state.tripNumber - 1} ${state.tripNumber - 1 === 1 ? 'journey' : 'journeys'} played`;
+  const n = state.journeys.length;
+  $('#results-sub').textContent = `${n} ${n === 1 ? 'journey' : 'journeys'} on record`;
   setTab('all');
   showScreen('screen-results');
 });
@@ -580,30 +682,35 @@ $('#btn-new-trip').addEventListener('click', startTrip);
 
 $('#btn-edit-players').addEventListener('click', () => {
   renderEditor();
+  paintArchiveNote();
   showScreen('screen-setup');
 });
 
 $('#btn-reset-all').addEventListener('click', () => {
-  confirmDialog('Reset everything?', 'Every score, journey win and journey count goes back to zero. Players are kept.', () => {
+  confirmDialog('Reset the whole archive?', 'Every score, win and recorded journey is erased. The spotters stay. Export first if you want to keep the log.', () => {
     state.players.forEach((p) => { p.trip = 0; p.total = 0; p.wins = 0; });
     state.tripNumber = 1;
     state.tripStart = null;
     state.lastTrip = null;
+    state.journeys = [];
     undoStack = [];
     save();
     renderEditor();
+    paintArchiveNote();
   });
 });
 
 /* ------------------------------ boot ------------------------------ */
 (function boot() {
   applyTheme();
+  requestPersistence();
 
   const soundBtn = $('#btn-sound');
   soundBtn.textContent = state.sound ? '\u266a' : '\u266a\u0338';
   soundBtn.classList.toggle('is-off', !state.sound);
 
   renderEditor();
+  paintArchiveNote();
 
   if (state.tripStart) {
     // A journey was in progress when the app was closed — pick it back up.

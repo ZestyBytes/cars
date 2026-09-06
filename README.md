@@ -20,11 +20,29 @@ Static site: no build step, no dependencies, no network needed after first load.
    score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar.
 3. **End journey** — the trophy stamp strikes, confetti falls, and the trip leaderboard
    appears. Trip scores reset for the next journey; all-time totals and journeys-won keep running.
-4. **All-time** — standings live behind the All-time button on the setup screen.
-5. **Reset everything** — zeroes all scores and journey counts, keeps the players.
+4. **All-time / Log** — the results screen has three tabs: this journey, all-time
+   standings, and the log of every journey ever finished (date, winner and each
+   spotter's tally).
+5. **Reset all** — erases every score, win and recorded journey. The spotters stay.
+
+## Where the scores live
 
 Scores save as you tap, so a reload, a locked phone or a dropped signal doesn't lose
-the game — an in-progress journey resumes where it left off.
+the game — an in-progress journey resumes where it left off. Finished journeys go into
+the log, and the all-time totals and journeys-won keep running across them.
+
+That record lives in the browser's own storage, which means it is **per browser and per
+device**: the phone and the car's browser keep separate archives, and clearing site data
+wipes it. Two things guard against that:
+
+- The app asks the browser to mark its storage persistent, so it isn't evicted to free
+  space. Adding the app to the home screen makes browsers far more likely to grant this.
+- **Export** on the setup screen saves the whole archive — spotters, totals, journey log
+  — as a dated `.json` file, and **Import** loads one back. That is also how you move the
+  archive from the phone to the car, or restore it after a reset.
+
+If we later want one shared archive that syncs between devices by itself, that needs a
+backend (Supabase, the way `nota` does it) rather than browser storage.
 
 ## Running it
 

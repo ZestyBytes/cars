@@ -30,6 +30,14 @@
     <h2 class="section-title">Field party</h2>
     <div id="player-editor" class="player-editor"></div>
     <button class="btn btn-add" id="btn-add-player" type="button"><span class="plus">+</span> Add spotter</button>
+
+    <h2 class="section-title archive-title">Archive</h2>
+    <p class="hint archive-note" id="archive-note">Every finished journey is kept on this device.</p>
+    <div class="archive-actions">
+      <button class="btn btn-ghost" id="btn-export" type="button">Export</button>
+      <button class="btn btn-ghost" id="btn-import" type="button">Import</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
   </div>
 
   <footer class="setup-footer">
@@ -72,6 +80,7 @@
     <div class="tabs" role="tablist">
       <button class="tab is-active" data-tab="trip" role="tab" type="button">This journey</button>
       <button class="tab" data-tab="all" role="tab" type="button">All-time</button>
+      <button class="tab" data-tab="log" role="tab" type="button">Log</button>
     </div>
     <ol class="leaderboard" id="leaderboard"></ol>
 
