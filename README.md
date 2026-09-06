@@ -19,8 +19,7 @@ Static site: no build step, no dependencies, no network needed after first load.
 2. **Begin journey** — each spotter's sheet is one big button. Tap anywhere on it to
    score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar.
 3. **End journey** — the trophy stamp strikes, confetti falls, and the trip leaderboard
-   appears. Trip scores reset for
-   the next journey; all-time totals and journeys-won keep running.
+   appears. Trip scores reset for the next journey; all-time totals and journeys-won keep running.
 4. **All-time** — standings live behind the All-time button on the setup screen.
 5. **Reset everything** — zeroes all scores and journey counts, keeps the players.
 
