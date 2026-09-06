@@ -1,34 +1,29 @@
-name: Deploy to GitHub Pages
+name: Publish to gh-pages
 
+# GitHub serves the site from the gh-pages branch, so publishing is just
+# keeping that branch level with main. This touches no Pages API, which
+# the Actions token is not permitted to call.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: gh-pages
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      # enablement turns Pages on for the repository if it is not on yet,
-      # so the site does not need anyone to visit the settings screen.
-      - uses: actions/configure-pages@v5
         with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          fetch-depth: 0
+      - name: Push main to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push --force origin HEAD:gh-pages
