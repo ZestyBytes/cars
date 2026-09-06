@@ -43,9 +43,8 @@ wipes it. Two things guard against that:
 
 - The app asks the browser to mark its storage persistent, so it isn't evicted to free
   space. Adding the app to the home screen makes browsers far more likely to grant this.
-- Uploaded photos are cropped square and shrunk to 256px JPEG (a few KB each) before
-  being stored, and journeys in the log reference a spotter's portrait rather than
-  copying it, so the archive stays small however long you play.
+- Journeys in the log store names and tallies only, about 300 bytes each, so the archive
+  stays small however long you play.
 - **Export** on the setup screen saves the whole archive — spotters, totals, journey log
   — as a dated `.json` file, and **Import** loads one back. That is also how you move the
   archive from the phone to the car, or restore it after a reset.
@@ -64,13 +63,14 @@ python3 -m http.server 8000   # then open http://localhost:8000
 Or push to GitHub Pages (Settings → Pages → deploy from branch) and open that URL in
 the car.
 
-## The specimen plates
+## The car plates
 
-`assets/cars/*.webp` are photographs rather than traced silhouettes: a three-quarter
-view is what makes a car recognisable from the passenger seat, and flattening one to a
-side profile throws that away. Their studio background is shifted onto the archive's
-paper tone so a plate sits on the page rather than glowing on it, and the dark theme
-dims the whole plate so it isn't a lamp in the face at night.
+`assets/cars/*.webp` are the supplied illustrations, cropped to drop their printed
+titles (the sheet's own chip names the car, in the archive's typeface). They are mounted
+as bordered plates, toned like the archive's other images, and dimmed under the dark
+theme so a night journey isn't lit by a bright rectangle. They are `<img>` elements
+rather than backgrounds, so a plate scales itself down to whatever room a sheet has
+instead of relying on viewport arithmetic.
 
 ## Notes on tablets and the car browser
 
@@ -87,7 +87,6 @@ lock while a journey is running so the display doesn't sleep mid-game.
 | `index.html` | The three screens: setup, game, results |
 | `styles.css` | Field-notebook theme (light and dark), responsive board layout |
 | `cars.js` | Car silhouettes + the keyword guesser that picks one |
-| `avatars.js` | Portraits: character outlines, initials, photo resizing |
-| `assets/cars/` | Photographed specimen plates |
+| `assets/cars/` | The illustrated car plates |
 | `app.js` | State, scoring, timer, leaderboards, confetti |
 | `sw.js` | Offline cache |

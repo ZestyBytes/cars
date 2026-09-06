@@ -149,28 +149,23 @@ const CAR_SHAPES = {
    seat, and tracing it to a side profile throws that away. Their studio
    background is toned to the paper, so a plate sits on the page. */
 const CAR_PHOTOS = {
-  'photo:tesla-y': { label: 'Tesla Model Y', src: 'assets/cars/tesla-model-y.webp' },
-  'photo:honda-jazz': { label: 'Honda Jazz', src: 'assets/cars/honda-jazz.webp' },
+  'photo:tesla-y': { label: 'Tesla Model Y', src: 'assets/cars/tesla-model-y.webp', ratio: 1.18 },
+  'photo:honda-jazz': { label: 'Honda Jazz', src: 'assets/cars/honda-jazz.webp', ratio: 1.16 },
 };
 
-/* A specimen mark is a photographic plate, an uploaded photograph, or a
-   drawn silhouette. */
-function carMark(key, cls = '', ownPhoto = null) {
-  if (key === 'upload') {
-    return isPhoto(ownPhoto)
-      ? `<span class="car-photo ${cls}" style="background-image:url('${ownPhoto}')" aria-hidden="true"></span>`
-      : carSvg('ev', cls);
-  }
-  if (CAR_PHOTOS[key]) {
-    return `<span class="car-photo ${cls}" style="background-image:url('${CAR_PHOTOS[key].src}')" aria-hidden="true"></span>`;
+/* A specimen mark is either a mounted plate or a drawn silhouette. Plates
+   are real images so they scale themselves down to whatever room the sheet
+   has, keeping their proportions without any height arithmetic. */
+function carMark(key, cls = '') {
+  const photo = CAR_PHOTOS[key];
+  if (photo) {
+    return `<img class="car-plate ${cls}" src="${photo.src}" alt="" aria-hidden="true">`;
   }
   return carSvg(key, cls);
 }
 
 function carLabel(key) {
-  if (key === 'upload') return 'Your photo';
-  if (CAR_PHOTOS[key]) return CAR_PHOTOS[key].label;
-  return (CAR_SHAPES[key] || CAR_SHAPES.ev).label;
+  return CAR_PHOTOS[key] ? CAR_PHOTOS[key].label : (CAR_SHAPES[key] || CAR_SHAPES.ev).label;
 }
 
 const CAR_ORDER = [
