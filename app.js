@@ -263,7 +263,7 @@ function renderBoard() {
       ${carMark(p.shape, 'panel-car')}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
-        <span class="chip">${escapeHtml(p.car)}</span>
+        ${carIsTitled(p.shape) ? '' : `<span class="chip">${escapeHtml(p.car)}</span>`}
         <span class="panel-total">All-time ${p.total}</span>
         <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
       </div>

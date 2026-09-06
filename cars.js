@@ -149,9 +149,14 @@ const CAR_SHAPES = {
    seat, and tracing it to a side profile throws that away. Their studio
    background is toned to the paper, so a plate sits on the page. */
 const CAR_PHOTOS = {
-  'photo:tesla-y': { label: 'Tesla Model Y', src: 'assets/cars/tesla-model-y.webp', ratio: 1.18 },
-  'photo:honda-jazz': { label: 'Honda Jazz', src: 'assets/cars/honda-jazz.webp', ratio: 1.16 },
+  // titled: the artwork names the car itself, so the sheet need not repeat it.
+  'photo:tesla-y': { label: 'Tesla Model Y', src: 'assets/cars/tesla-model-y.webp', titled: true },
+  'photo:honda-jazz': { label: 'Honda Jazz', src: 'assets/cars/honda-jazz.webp', titled: true },
 };
+
+function carIsTitled(key) {
+  return Boolean(CAR_PHOTOS[key] && CAR_PHOTOS[key].titled);
+}
 
 /* A specimen mark is either a mounted plate or a drawn silhouette. Plates
    are real images so they scale themselves down to whatever room the sheet
