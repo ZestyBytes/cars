@@ -28,6 +28,13 @@
   <div class="setup-scroll">
     <p class="hint">Who is spotting, and what are they looking for?</p>
     <h2 class="section-title">Field party</h2>
+    <div class="hero-choice">
+      <span class="hero-choice-label">Big mark on the button</span>
+      <div class="tabs" role="group" aria-label="Big mark on the button">
+        <button class="tab is-active" id="hero-car" data-hero="car" type="button">Car</button>
+        <button class="tab" id="hero-portrait" data-hero="portrait" type="button">Portrait</button>
+      </div>
+    </div>
     <div id="player-editor" class="player-editor"></div>
     <button class="btn btn-add" id="btn-add-player" type="button"><span class="plus">+</span> Add spotter</button>
 
@@ -103,6 +110,22 @@
   </div>
 </div>
 
+<!-- ───────────────────────── PORTRAIT PICKER ───────────────────────── -->
+<div class="modal" id="portrait-modal" hidden>
+  <div class="modal-card modal-card-wide" role="dialog" aria-modal="true" aria-labelledby="portrait-title">
+    <h3 id="portrait-title">Portrait</h3>
+    <div class="portrait-current" id="portrait-current"></div>
+    <div class="modal-actions portrait-upload">
+      <button class="btn btn-ghost" id="btn-photo" type="button">Upload photo</button>
+      <input type="file" id="photo-file" accept="image/*" hidden>
+    </div>
+    <div class="shape-grid" id="figure-grid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="portrait-close" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- ───────────────────────── CAR PICKER ───────────────────────── -->
 <div class="modal" id="shape-modal" hidden>
   <div class="modal-card modal-card-wide" role="dialog" aria-modal="true" aria-labelledby="shape-title">
@@ -115,6 +138,7 @@
 </div>
 
 <script src="cars.js"></script>
+<script src="avatars.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

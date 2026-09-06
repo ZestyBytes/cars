@@ -21,12 +21,13 @@ const DEFAULT_STATE = () => ({
   version: 1,
   sound: true,
   theme: 'light',
+  hero: 'car',    // which mark fills the button: 'car' or 'portrait'
   tripNumber: 1,
   tripStart: null,
   journeys: [],   // every finished journey, newest last
   players: [
-    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
-    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#1c6e63', portrait: 'adult', photo: null, trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#a13a2e', portrait: 'child', photo: null, trip: 0, total: 0, wins: 0 },
   ],
   lastTrip: null,
 });
@@ -58,6 +59,7 @@ function load() {
       p.trip = p.trip || 0;
       p.total = p.total || 0;
       p.wins = p.wins || 0;
+      p.portrait = p.portrait || 'adult'; // players saved before portraits existed
     });
     return Object.assign(DEFAULT_STATE(), parsed);
   } catch (err) {
@@ -69,8 +71,15 @@ function load() {
 function save() {
   try {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    return true;
   } catch (err) {
     console.warn('Could not save game.', err);
+    // Photographs are the only thing here big enough to fill the store,
+    // so a failure needs saying rather than swallowing.
+    confirmDialog('The archive is full',
+      'There is no room left in this browser\u2019s storage. Remove a photograph, or export and reset the archive.',
+      () => {});
+    return false;
   }
 }
 
@@ -112,6 +121,7 @@ function renderEditor() {
       p.name = el.value;
       const tag = el.closest('.pcard').querySelector('.mount-tag');
       if (tag) tag.textContent = p.name || 'Unnamed';
+      if (p.portrait === 'initials') refreshPortrait(p);
       save();
     });
   });
@@ -142,6 +152,10 @@ function renderEditor() {
     el.addEventListener('click', () => openShapePicker(el.dataset.pick));
   });
 
+  wrap.querySelectorAll('[data-portrait]').forEach((el) => {
+    el.addEventListener('click', () => openPortraitPicker(el.dataset.portrait));
+  });
+
   wrap.querySelectorAll('[data-remove]').forEach((el) => {
     el.addEventListener('click', () => {
       state.players = state.players.filter((p) => p.id !== el.dataset.remove);
@@ -161,17 +175,23 @@ function playerCard(p) {
     <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
       <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
       <span class="acc-no">${accNo(p.id)}</span>
-      ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove</button>` : ''}
-      <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change specimen type for ${escapeHtml(p.name)}">
-        <span data-preview="${p.id}">${carSvg(p.shape)}</span>
-        <small>change</small>
-      </button>
+      <div class="pcard-plates">
+        <button class="pcard-preview" data-portrait="${p.id}" type="button" aria-label="Change portrait for ${escapeHtml(p.name)}">
+          <span data-portrait-preview="${p.id}">${portraitHtml(p, 'portrait-plate')}</span>
+          <small>Spotter</small>
+        </button>
+        <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change specimen type for ${escapeHtml(p.name)}">
+          <span data-preview="${p.id}">${carSvg(p.shape)}</span>
+          <small>Specimen</small>
+        </button>
+      </div>
       <div class="pcard-fields">
         <label class="field-label"><span>Spotter</span>
           <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
         <label class="field-label"><span>Specimen</span>
           <input class="field" data-car="${p.id}" value="${escapeHtml(p.car)}" placeholder="Car they're looking for" maxlength="24" autocomplete="off"></label>
         <div class="swatches">${swatches}</div>
+        ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove spotter</button>` : ''}
       </div>
     </div>`;
 }
@@ -206,13 +226,76 @@ function openShapePicker(playerId) {
   modal.hidden = false;
 }
 
+function refreshPortrait(p) {
+  const slot = document.querySelector(`[data-portrait-preview="${p.id}"]`);
+  if (slot) slot.innerHTML = portraitHtml(p, 'portrait-plate');
+  const current = $('#portrait-current');
+  if (current && current.dataset.for === p.id) current.innerHTML = portraitHtml(p, 'portrait-large');
+}
+
+let portraitTarget = null;
+
+function openPortraitPicker(playerId) {
+  const p = findPlayer(playerId);
+  if (!p) return;
+  portraitTarget = playerId;
+  const modal = $('#portrait-modal');
+  const grid = $('#figure-grid');
+  const current = $('#portrait-current');
+  modal.style.setProperty('--c', p.color);
+  current.dataset.for = p.id;
+  current.innerHTML = portraitHtml(p, 'portrait-large');
+
+  const tiles = [{ value: 'initials', label: 'Initials', art: `<span class="portrait portrait-initials">${initialsOf(p.name)}</span>` }]
+    .concat(FIGURE_ORDER.map((k) => ({ value: k, label: FIGURE_SHAPES[k].label, art: `<span class="portrait portrait-figure">${figureSvg(k)}</span>` })));
+
+  grid.innerHTML = tiles.map(
+    (t) => `<button class="shape-btn portrait-btn" data-value="${t.value}" aria-pressed="${t.value === p.portrait}"
+              aria-label="${t.label}" type="button">${t.art}<small>${t.label}</small></button>`
+  ).join('');
+
+  grid.querySelectorAll('.portrait-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      p.portrait = b.dataset.value;
+      save();
+      refreshPortrait(p);
+      grid.querySelectorAll('.portrait-btn').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+    });
+  });
+
+  modal.hidden = false;
+}
+
+/* A photograph replaces any previous one for that spotter, so the
+   archive never holds more than one image per player. */
+function usePhoto(file) {
+  const p = findPlayer(portraitTarget);
+  if (!p) return;
+  processPhoto(file)
+    .then((dataUrl) => {
+      const previous = p.photo;
+      p.photo = dataUrl;
+      p.portrait = 'photo';
+      if (!save()) {                     // over quota: put it back as it was
+        p.photo = previous;
+        p.portrait = previous ? 'photo' : 'adult';
+        save();
+      }
+      refreshPortrait(p);
+      $('#portrait-modal').querySelectorAll('.portrait-btn').forEach((o) => o.setAttribute('aria-pressed', 'false'));
+    })
+    .catch(() => {
+      confirmDialog('Could not use that picture', 'The file could not be read as an image.', () => {});
+    });
+}
+
 function findPlayer(id) { return state.players.find((p) => p.id === id); }
 
 function addPlayer() {
   const used = state.players.map((p) => p.color);
   const color = COLORS.find((c) => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
   state.players.push({
-    id: uid(), name: '', car: '', shape: 'suv', color,
+    id: uid(), name: '', car: '', shape: 'suv', color, portrait: 'initials', photo: null,
     trip: 0, total: 0, wins: 0,
   });
   save();
@@ -250,9 +333,14 @@ function renderBoard() {
          aria-label="${escapeHtml(p.name)} spotted a ${escapeHtml(p.car)}">
       <span class="mount-tag">${escapeHtml(p.name)}</span>
       <span class="acc-no">${accNo(p.id)}</span>
-      ${carSvg(p.shape, 'panel-car')}
+      ${state.hero === 'portrait'
+        ? portraitHtml(p, 'portrait-hero')
+        : carSvg(p.shape, 'panel-car')}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
+        ${state.hero === 'portrait'
+          ? carSvg(p.shape, 'panel-mini-car')
+          : portraitHtml(p, 'portrait-mini')}
         <span class="chip">${escapeHtml(p.car)}</span>
         <span class="panel-total">All-time ${p.total}</span>
         <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
@@ -366,7 +454,10 @@ function endTrip() {
     number: state.tripNumber,
     duration: state.tripStart ? Date.now() - state.tripStart : 0,
     endedAt: Date.now(),
-    scores: state.players.map((p) => ({ id: p.id, name: p.name, car: p.car, shape: p.shape, color: p.color, score: p.trip })),
+    scores: state.players.map((p) => ({
+      id: p.id, name: p.name, car: p.car, shape: p.shape, color: p.color,
+      portrait: p.portrait, score: p.trip,
+    })),
     winnerIds: winners.map((w) => w.id),
   };
   state.journeys.push(state.lastTrip);
@@ -409,6 +500,12 @@ function setTab(which) {
   renderLeaderboard(which);
 }
 
+/* Snapshots carry no photograph, so pair one back up with its spotter. */
+function withPhoto(snapshot) {
+  const live = findPlayer(snapshot.id);
+  return live ? { ...snapshot, photo: live.photo } : snapshot;
+}
+
 function renderLeaderboard(which) {
   const list = $('#leaderboard');
   let rows;
@@ -422,20 +519,20 @@ function renderLeaderboard(which) {
     const t = state.lastTrip;
     const scores = t ? [...t.scores] : state.players.map((p) => ({ ...p, score: p.trip }));
     rows = scores.sort((a, b) => b.score - a.score).map((s) => ({
-      name: s.name, sub: s.car, color: s.color, shape: s.shape, value: s.score,
+      name: s.name, sub: s.car, color: s.color, value: s.score, who: withPhoto(s),
     }));
   } else {
     rows = [...state.players].sort((a, b) => b.total - a.total).map((p) => ({
       name: p.name,
       sub: `${p.car} · ${p.wins} ${p.wins === 1 ? 'journey' : 'journeys'} won`,
-      color: p.color, shape: p.shape, value: p.total,
+      color: p.color, value: p.total, who: p,
     }));
   }
 
   list.innerHTML = rows.map((r, i) => `
     <li class="lb-row ${i === 0 ? 'is-first' : ''}" style="--c:${r.color}">
       <span class="lb-rank">${i === 0 ? '1st' : `${i + 1}${['th', 'st', 'nd', 'rd'][(i + 1) % 10] || 'th'}`}</span>
-      <span class="lb-car">${carSvg(r.shape)}</span>
+      <span class="lb-face">${portraitHtml(r.who, 'portrait-row')}</span>
       <span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span>
       <span class="lb-score">${r.value}</span>
     </li>`).join('');
@@ -535,6 +632,10 @@ function blip(freq) {
   } catch (err) { /* audio is a nicety, never a blocker */ }
 }
 
+function paintHeroChoice() {
+  $$('[data-hero]').forEach((b) => b.classList.toggle('is-active', b.dataset.hero === state.hero));
+}
+
 /* ------------------------------ archive ------------------------------ */
 /* localStorage can be evicted; a granted persistence request means the
    browser keeps the archive until it is deleted deliberately. */
@@ -630,6 +731,25 @@ function confirmDialog(title, body, onOk) {
 }
 
 /* ------------------------------ wiring ------------------------------ */
+$$('[data-hero]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.hero = btn.dataset.hero;
+    save();
+    paintHeroChoice();
+  });
+});
+
+$('#btn-photo').addEventListener('click', () => $('#photo-file').click());
+$('#photo-file').addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) usePhoto(file);
+  e.target.value = '';
+});
+$('#portrait-close').addEventListener('click', () => { $('#portrait-modal').hidden = true; });
+$('#portrait-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'portrait-modal') e.currentTarget.hidden = true;
+});
+
 $('#btn-export').addEventListener('click', exportArchive);
 $('#btn-import').addEventListener('click', () => $('#import-file').click());
 $('#import-file').addEventListener('change', (e) => {
@@ -683,6 +803,7 @@ $('#btn-new-trip').addEventListener('click', startTrip);
 $('#btn-edit-players').addEventListener('click', () => {
   renderEditor();
   paintArchiveNote();
+  paintHeroChoice();
   showScreen('screen-setup');
 });
 
@@ -711,6 +832,7 @@ $('#btn-reset-all').addEventListener('click', () => {
 
   renderEditor();
   paintArchiveNote();
+  paintHeroChoice();
 
   if (state.tripStart) {
     // A journey was in progress when the app was closed — pick it back up.

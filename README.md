@@ -13,9 +13,13 @@ Static site: no build step, no dependencies, no network needed after first load.
 
 ## Playing
 
-1. **Setup** — each spotter gets a name, the car they're looking for, an ink colour and
-   a silhouette (the silhouette auto-picks itself from what you type, or tap the tile to
-   override).
+1. **Setup** — each spotter gets a name, a portrait, the car they're looking for, an ink
+   colour and a car silhouette. Tap the **Spotter** plate to set the portrait: upload a
+   photo, pick a character outline, or use their initials. Tap the **Specimen** plate for
+   the car (it also auto-picks itself from what you type).
+   **Big mark on the button** chooses which of the two fills the button — the car (what
+   you're hunting) or the portrait (whose button it is). The other one shows small in the
+   footer of the sheet.
 2. **Begin journey** — each spotter's sheet is one big button. Tap anywhere on it to
    score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar.
 3. **End journey** — the trophy stamp strikes, confetti falls, and the trip leaderboard
@@ -37,6 +41,9 @@ wipes it. Two things guard against that:
 
 - The app asks the browser to mark its storage persistent, so it isn't evicted to free
   space. Adding the app to the home screen makes browsers far more likely to grant this.
+- Uploaded photos are cropped square and shrunk to 256px JPEG (a few KB each) before
+  being stored, and journeys in the log reference a spotter's portrait rather than
+  copying it, so the archive stays small however long you play.
 - **Export** on the setup screen saves the whole archive — spotters, totals, journey log
   — as a dated `.json` file, and **Import** loads one back. That is also how you move the
   archive from the phone to the car, or restore it after a reset.
@@ -69,5 +76,6 @@ lock while a journey is running so the display doesn't sleep mid-game.
 | `index.html` | The three screens: setup, game, results |
 | `styles.css` | Field-notebook theme (light and dark), responsive board layout |
 | `cars.js` | Car silhouettes + the keyword guesser that picks one |
+| `avatars.js` | Portraits: character outlines, initials, photo resizing |
 | `app.js` | State, scoring, timer, leaderboards, confetti |
 | `sw.js` | Offline cache |
