@@ -94,12 +94,15 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .gamebar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);}
 .gamebar-left{display:flex;flex-direction:column;gap:3px;}
 .trip-label{white-space:nowrap;font:9px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-.trip-timer{font:700 clamp(17px,3vw,22px)/1 var(--mono);letter-spacing:.04em;font-variant-numeric:tabular-nums;}
+.trip-timer{font:600 clamp(18px,3vw,23px)/1 var(--serif);letter-spacing:.04em;font-variant-numeric:tabular-nums;}
 .gamebar-right{display:flex;align-items:center;gap:8px;}
 
 .board{flex:1;display:grid;gap:26px 18px;padding:20px 16px calc(16px + var(--safe-b));min-height:0;}
 @media(orientation:portrait){
   .board{grid-auto-flow:row;grid-auto-rows:1fr;}
+  .panel{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr);align-items:center;column-gap:14px;padding:32px 16px 58px;}
+  .panel-car,img.panel-car{align-self:center;justify-self:center;margin:0;max-width:100%;max-height:100%;width:auto;}
+  .panel .panel-score{align-self:center;}
   .board[data-count="4"],.board[data-count="5"],.board[data-count="6"]{grid-template-columns:1fr 1fr;}
 }
 @media(orientation:landscape){
@@ -116,8 +119,8 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .panel-score{align-self:center;}
 /* Stacked sheets are short, so on a phone the tally gives room back to the
    plate. Declared after the base rule so it actually wins. */
-@media(orientation:portrait){.board .panel-score{font-size:clamp(40px,11vh,130px);}}
-.panel-score{font:700 clamp(56px,17vh,190px)/.9 var(--mono);letter-spacing:-.04em;text-align:center;font-variant-numeric:tabular-nums;pointer-events:none;}
+@media(orientation:portrait){.board .panel-score{font-size:clamp(52px,14vh,150px);}}
+.panel-score{font:600 clamp(56px,17vh,190px)/.9 var(--serif);letter-spacing:-.02em;text-align:center;font-variant-numeric:tabular-nums;pointer-events:none;}
 .panel-score.bump{animation:bump .28s ease;}
 @keyframes bump{40%{transform:scale(1.12);}}
 .panel-target{position:absolute;left:16px;right:16px;bottom:12px;display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--line);}
@@ -156,7 +159,7 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .standing-who{min-width:0;}
 .standing-who b{display:block;font:600 15px/1.2 var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .standing-who small{font:8px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
-.standing-total{font:700 20px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.standing-total{font:600 24px var(--serif);font-variant-numeric:tabular-nums;}
 .standings-foot{margin:14px 0 0;font:8px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--faint);}
 
 /* ---------- results ---------- */
@@ -186,7 +189,7 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .lb-name{min-width:0;}
 .lb-name b{display:block;font:600 18px/1.25 var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lb-name small{font:9px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);}
-.lb-score{font:700 22px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.lb-score{font:600 26px var(--serif);font-variant-numeric:tabular-nums;}
 .results-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
 
 /* ---------- journey log ---------- */
@@ -227,7 +230,6 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
   .topbar{padding:14px 16px 8px;}
   .setup-scroll{padding:6px 16px 18px;}
   .setup-footer{padding:12px 16px calc(12px + var(--safe-b));}
-  .pcard{grid-template-columns:78px 1fr;gap:12px;}
 }
 @media(prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important;}
