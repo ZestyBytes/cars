@@ -25,8 +25,8 @@ const DEFAULT_STATE = () => ({
   tripStart: null,
   journeys: [],   // every finished journey, newest last
   players: [
-    { id: uid(), name: 'Dad', car: 'Tesla Model Y', shape: 'photo:tesla-y', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
-    { id: uid(), name: 'Molly', car: 'Honda Jazz', shape: 'photo:honda-jazz', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Dad', car: 'model-y', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Molly', car: 'jazz', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
   ],
   lastTrip: null,
 });
@@ -58,6 +58,7 @@ function load() {
       p.trip = p.trip || 0;
       p.total = p.total || 0;
       p.wins = p.wins || 0;
+      if (!CARS[p.car]) p.car = 'model-y';   // archives from before the pair
     });
     return Object.assign(DEFAULT_STATE(), parsed);
   } catch (err) {
@@ -124,15 +125,11 @@ function renderEditor() {
   });
 
   wrap.querySelectorAll('[data-car]').forEach((el) => {
-    el.addEventListener('input', () => {
+    el.addEventListener('click', () => {
       const p = findPlayer(el.dataset.car);
-      p.car = el.value;
-      const guess = guessShape(el.value);
-      if (guess && !p.shapeLocked) {
-        p.shape = guess;
-        refreshCardArt(p);
-      }
+      p.car = el.dataset.value;
       save();
+      renderEditor();
     });
   });
 
@@ -143,10 +140,6 @@ function renderEditor() {
       save();
       renderEditor();
     });
-  });
-
-  wrap.querySelectorAll('[data-pick]').forEach((el) => {
-    el.addEventListener('click', () => openShapePicker(el.dataset.pick));
   });
 
   wrap.querySelectorAll('[data-remove]').forEach((el) => {
@@ -164,56 +157,25 @@ function playerCard(p) {
               aria-pressed="${c === p.color}" aria-label="Colour ${c}" type="button"></button>`
   ).join('');
 
+  const choices = CAR_ORDER.map(
+    (key) => `<button class="car-option" data-car="${p.id}" data-value="${key}"
+                aria-pressed="${key === p.car}" aria-label="${carLabel(key)}"
+                type="button">${carMark(key)}</button>`
+  ).join('');
+
   return `
     <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
       <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
       <span class="acc-no">${accNo(p.id)}</span>
-      <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change the car for ${escapeHtml(p.name)}">
-        <span data-preview="${p.id}">${carMark(p.shape, 'plate-mark')}</span>
-        <small>change</small>
-      </button>
       <div class="pcard-fields">
         <label class="field-label"><span>Spotter</span>
           <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
-        <label class="field-label"><span>Specimen</span>
-          <input class="field" data-car="${p.id}" value="${escapeHtml(p.car)}" placeholder="Car they're looking for" maxlength="24" autocomplete="off"></label>
+        <span class="field-label"><span>Looking for</span></span>
+        <div class="car-choice">${choices}</div>
         <div class="swatches">${swatches}</div>
         ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove spotter</button>` : ''}
       </div>
     </div>`;
-}
-
-function refreshCardArt(p) {
-  const preview = document.querySelector(`[data-preview="${p.id}"]`);
-  if (preview) preview.innerHTML = carMark(p.shape, 'plate-mark');
-}
-
-/* The shape picker is a sheet rather than an inline grid — fifteen
-   silhouettes per player would swamp the setup screen on a phone. */
-let shapeTarget = null;
-
-function openShapePicker(playerId) {
-  const p = findPlayer(playerId);
-  if (!p) return;
-  shapeTarget = playerId;
-  const grid = $('#shape-grid');
-  const modal = $('#shape-modal');
-  modal.style.setProperty('--c', p.color);
-  grid.innerHTML = CAR_ORDER.map(
-    (key) => `<button class="shape-btn" data-value="${key}" aria-pressed="${key === p.shape}"
-                title="${carLabel(key)}" aria-label="${carLabel(key)}"
-                type="button">${carMark(key, 'tile-mark')}<small>${carLabel(key)}</small></button>`
-  ).join('');
-  grid.querySelectorAll('.shape-btn').forEach((b) => {
-    b.addEventListener('click', () => {
-      p.shape = b.dataset.value;
-      p.shapeLocked = true; // stop the keyword guesser overriding a manual pick
-      save();
-      refreshCardArt(p);
-      grid.querySelectorAll('.shape-btn').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
-    });
-  });
-  modal.hidden = false;
 }
 
 function findPlayer(id) { return state.players.find((p) => p.id === id); }
@@ -222,7 +184,7 @@ function addPlayer() {
   const used = state.players.map((p) => p.color);
   const color = COLORS.find((c) => !used.includes(c)) || COLORS[state.players.length % COLORS.length];
   state.players.push({
-    id: uid(), name: '', car: '', shape: 'suv', color,
+    id: uid(), name: '', car: 'model-y', color,
     trip: 0, total: 0, wins: 0,
   });
   save();
@@ -241,7 +203,6 @@ function startTrip() {
   }
   state.players.forEach((p, i) => {
     if (!p.name.trim()) p.name = `Player ${i + 1}`;
-    if (!p.car.trim()) p.car = CAR_SHAPES[p.shape].label;
     p.trip = 0;
   });
   state.tripStart = Date.now();
@@ -257,13 +218,12 @@ function renderBoard() {
   board.dataset.count = state.players.length;
   board.innerHTML = state.players.map((p) => `
     <div class="panel sheet" style="--c:${p.color}" data-panel="${p.id}" role="button" tabindex="0"
-         aria-label="${escapeHtml(p.name)} spotted a ${escapeHtml(p.car)}">
+         aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
       <span class="mount-tag">${escapeHtml(p.name)}</span>
       <span class="acc-no">${accNo(p.id)}</span>
-      ${carMark(p.shape, 'panel-car')}
+      ${carMark(p.car, 'panel-car')}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
-        ${carIsTitled(p.shape) ? '' : `<span class="chip">${escapeHtml(p.car)}</span>`}
         <span class="panel-total">All-time ${p.total}</span>
         <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
       </div>
@@ -299,7 +259,7 @@ function renderStandings() {
   list.innerHTML = ranked.map((p, i) => `
     <li class="standing ${i === 0 && p.total > 0 ? 'is-leader' : ''}" style="--c:${p.color}">
       <span class="standing-rank">${i + 1}</span>
-      <span class="standing-face">${carMark(p.shape, 'standing-mark')}</span>
+      <span class="standing-face">${carMark(p.car, 'standing-mark')}</span>
       <span class="standing-who">
         <b>${escapeHtml(p.name)}</b>
         <small>${p.wins} ${p.wins === 1 ? 'win' : 'wins'}${p.trip ? ` · +${p.trip} today` : ''}</small>
@@ -400,8 +360,7 @@ function endTrip() {
     duration: state.tripStart ? Date.now() - state.tripStart : 0,
     endedAt: Date.now(),
     scores: state.players.map((p) => ({
-      id: p.id, name: p.name, car: p.car, shape: p.shape, color: p.color,
-      score: p.trip,
+      id: p.id, name: p.name, car: p.car, color: p.color, score: p.trip,
     })),
     winnerIds: winners.map((w) => w.id),
   };
@@ -432,7 +391,7 @@ function showResults() {
     const w = t.scores.find((s) => s.id === t.winnerIds[0]);
     kicker.textContent = `Journey No. ${t.number} · ${fmtDuration(t.duration)}`;
     winner.textContent = `${w.name} wins!`;
-    sub.textContent = `${w.score} × ${w.car}`;
+    sub.textContent = `${w.score} × ${carLabel(w.car)}`;
   }
 
   setTab('trip');
@@ -458,20 +417,20 @@ function renderLeaderboard(which) {
     const t = state.lastTrip;
     const scores = t ? [...t.scores] : state.players.map((p) => ({ ...p, score: p.trip }));
     rows = scores.sort((a, b) => b.score - a.score).map((s) => ({
-      name: s.name, sub: s.car, color: s.color, shape: s.shape, value: s.score,
+      name: s.name, sub: carLabel(s.car), color: s.color, car: s.car, value: s.score,
     }));
   } else {
     rows = [...state.players].sort((a, b) => b.total - a.total).map((p) => ({
       name: p.name,
-      sub: `${p.car} · ${p.wins} ${p.wins === 1 ? 'journey' : 'journeys'} won`,
-      color: p.color, shape: p.shape, value: p.total,
+      sub: `${carLabel(p.car)} · ${p.wins} ${p.wins === 1 ? 'journey' : 'journeys'} won`,
+      color: p.color, car: p.car, value: p.total,
     }));
   }
 
   list.innerHTML = rows.map((r, i) => `
     <li class="lb-row ${i === 0 ? 'is-first' : ''}" style="--c:${r.color}">
       <span class="lb-rank">${i === 0 ? '1st' : `${i + 1}${['th', 'st', 'nd', 'rd'][(i + 1) % 10] || 'th'}`}</span>
-      <span class="lb-car">${carMark(r.shape, 'lb-mark')}</span>
+      <span class="lb-car">${carMark(r.car, 'lb-mark')}</span>
       <span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span>
       <span class="lb-score">${r.value}</span>
     </li>`).join('');
@@ -678,11 +637,6 @@ $('#btn-theme').addEventListener('click', () => {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   save();
   applyTheme();
-});
-
-$('#shape-close').addEventListener('click', () => { $('#shape-modal').hidden = true; });
-$('#shape-modal').addEventListener('click', (e) => {
-  if (e.target.id === 'shape-modal') e.currentTarget.hidden = true;
 });
 
 $('#btn-add-player').addEventListener('click', addPlayer);

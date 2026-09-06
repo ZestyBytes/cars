@@ -65,13 +65,12 @@ the car.
 
 ## The car plates
 
-`assets/cars/*.webp` are the supplied illustrations, used whole — title and all. Because
-the artwork names the car itself, a sheet showing a titled plate drops its own name chip
-rather than repeating it; a spotter using a drawn silhouette still gets the chip. Plates
-are mounted with a border, toned like the archive's other images, and dimmed under the
-dark theme so a night journey isn't lit by a bright rectangle. They are `<img>` elements
-rather than backgrounds, so a plate scales itself down to whatever room a sheet has
-instead of relying on viewport arithmetic.
+`assets/cars/*.webp` are the supplied illustrations, used whole — title and all. The
+artwork names the car, so nothing else on the sheet repeats it. Plates are mounted with
+a border, toned like the archive's other images, and dimmed under the dark theme so a
+night journey isn't lit by a bright rectangle. They are `<img>` elements rather than
+backgrounds, so a plate scales itself down to whatever room a sheet has instead of
+relying on viewport arithmetic.
 
 ## Notes on tablets and the car browser
 
@@ -87,7 +86,7 @@ lock while a journey is running so the display doesn't sleep mid-game.
 | --- | --- |
 | `index.html` | The three screens: setup, game, results |
 | `styles.css` | Field-notebook theme (light and dark), responsive board layout |
-| `cars.js` | Car silhouettes + the keyword guesser that picks one |
+| `cars.js` | The two cars and their plates |
 | `assets/cars/` | The illustrated car plates |
 | `app.js` | State, scoring, timer, leaderboards, confetti |
 | `sw.js` | Offline cache |
