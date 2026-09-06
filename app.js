@@ -375,6 +375,7 @@ function renderBoard() {
     </div>`).join('');
 
   $('#trip-number').textContent = state.tripNumber;
+  renderStandings();
 
   board.querySelectorAll('[data-panel]').forEach((el) => {
     el.addEventListener('pointerdown', (e) => {
@@ -394,6 +395,26 @@ function renderBoard() {
   });
 }
 
+/* The running record, kept in view while playing rather than saved for the
+   end: on a tablet in landscape there is room for it beside the board. */
+function renderStandings() {
+  const list = $('#standings-list');
+  if (!list) return;
+  const ranked = [...state.players].sort((a, b) => b.total - a.total || b.wins - a.wins);
+  list.innerHTML = ranked.map((p, i) => `
+    <li class="standing ${i === 0 && p.total > 0 ? 'is-leader' : ''}" style="--c:${p.color}">
+      <span class="standing-rank">${i + 1}</span>
+      <span class="standing-face">${portraitHtml(p, 'portrait-standing')}</span>
+      <span class="standing-who">
+        <b>${escapeHtml(p.name)}</b>
+        <small>${p.wins} ${p.wins === 1 ? 'win' : 'wins'}${p.trip ? ` · +${p.trip} today` : ''}</small>
+      </span>
+      <span class="standing-total">${p.total}</span>
+    </li>`).join('');
+  const n = state.journeys.length;
+  $('#standings-foot').textContent = `${n} ${n === 1 ? 'journey' : 'journeys'} on record`;
+}
+
 function score(id, event) {
   const p = findPlayer(id);
   if (!p) return;
@@ -402,6 +423,7 @@ function score(id, event) {
   undoStack.push(id);
   save();
   paintScore(p);
+  renderStandings();
 
   const panel = document.querySelector(`[data-panel="${id}"]`);
   if (panel) {
@@ -428,6 +450,7 @@ function unscore(id) {
   if (i > -1) undoStack.splice(i, 1);
   save();
   paintScore(p);
+  renderStandings();
   blip(240);
 }
 

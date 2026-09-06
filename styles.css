@@ -83,7 +83,7 @@ button,input{font:inherit;color:inherit;}
 /* A photographic plate carries its own studio white, which at night is a
    lamp in the face. Dim the whole plate rather than the page around it. */
 :root[data-theme="dark"] .car-photo{filter:saturate(.8) brightness(.5) contrast(1.05);}
-.car-photo.panel-car{width:min(94%,420px);aspect-ratio:1.75;max-height:min(38vh,240px);justify-self:center;align-self:end;margin-bottom:6px;}
+.car-photo.panel-car{width:min(92%,420px);aspect-ratio:1.75;max-height:min(40vh,300px);justify-self:center;align-self:end;margin-bottom:6px;}
 .car-photo.panel-mini-car{width:56px;aspect-ratio:1.85;}
 .car-photo.plate-mark{width:100%;aspect-ratio:1.3;}
 .car-photo.tile-mark{width:100%;aspect-ratio:1.5;}
@@ -129,11 +129,11 @@ button,input{font:inherit;color:inherit;}
 
 .board{flex:1;display:grid;gap:26px 18px;padding:20px 16px calc(16px + var(--safe-b));min-height:0;}
 @media(orientation:portrait){
-  .board{grid-auto-flow:row;}
+  .board{grid-auto-flow:row;grid-auto-rows:1fr;}
   .board[data-count="4"],.board[data-count="5"],.board[data-count="6"]{grid-template-columns:1fr 1fr;}
 }
 @media(orientation:landscape){
-  .board{grid-auto-flow:column;}
+  .board{grid-auto-flow:column;grid-auto-columns:1fr;}
   .board[data-count="5"],.board[data-count="6"]{grid-auto-flow:row;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;}
 }
 
@@ -142,8 +142,8 @@ button,input{font:inherit;color:inherit;}
 .panel:before{left:auto;right:96px;top:0;}
 .panel:after{display:none;}
 .panel:active{border-color:var(--c);box-shadow:0 10px 22px -12px rgba(34,38,30,.35);}
-.panel-car{width:min(88%,320px);max-height:100%;justify-self:center;align-self:end;margin-bottom:6px;color:var(--c);}
-.panel-score{font:700 clamp(56px,15vh,150px)/.9 var(--mono);letter-spacing:-.04em;text-align:center;font-variant-numeric:tabular-nums;pointer-events:none;}
+.panel-car{width:min(92%,420px);max-height:100%;justify-self:center;align-self:end;margin-bottom:6px;color:var(--c);}
+.panel-score{font:700 clamp(56px,17vh,190px)/.9 var(--mono);letter-spacing:-.04em;text-align:center;font-variant-numeric:tabular-nums;pointer-events:none;}
 .panel-score.bump{animation:bump .28s ease;}
 @keyframes bump{40%{transform:scale(1.12);}}
 .panel-target{position:absolute;left:16px;right:16px;bottom:12px;display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--line);}
@@ -158,10 +158,36 @@ button,input{font:inherit;color:inherit;}
 .floater{position:absolute;z-index:4;font:700 22px var(--mono);color:var(--c);pointer-events:none;animation:floatup .85s ease-out forwards;}
 @keyframes floatup{from{transform:translate(-50%,0);opacity:1;}to{transform:translate(-50%,-96px);opacity:0;}}
 
+/* ---------- standings rail ---------- */
+/* Only where there is width to spare: a phone keeps the whole screen for
+   the buttons. */
+.play{flex:1;display:flex;min-height:0;}
+.board{flex:1;}
+.standings{display:none;}
+@media(orientation:landscape) and (min-width:900px){
+  /* The rail carries the all-time count, so the sheets need not repeat it. */
+  .panel-total{display:none;}
+  .standings{display:flex;flex-direction:column;width:clamp(240px,22vw,320px);padding:20px 20px calc(16px + var(--safe-b)) 6px;border-left:1px solid var(--line);}
+}
+.standings-title{margin:0 0 16px;font:700 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);display:flex;align-items:center;gap:10px;}
+.standings-title:after{content:"";flex:1;height:1px;background:var(--line);}
+.standings-list{list-style:none;margin:0;padding:0;display:grid;gap:2px;overflow-y:auto;}
+.standing{display:grid;grid-template-columns:16px 30px 1fr auto;align-items:center;gap:10px;padding:9px 0 9px 10px;border-left:3px solid var(--c);border-bottom:1px solid var(--line);}
+.standing-rank{font:700 10px var(--mono);color:var(--faint);}
+.standing.is-leader .standing-rank{color:var(--stamp-red);}
+.standing-face{display:block;color:var(--c);}
+.portrait-standing{width:100%;aspect-ratio:1;}
+.portrait-standing.portrait-initials{font-size:12px;}
+.standing-who{min-width:0;}
+.standing-who b{display:block;font:600 15px/1.2 var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.standing-who small{font:8px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.standing-total{font:700 20px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.standings-foot{margin:14px 0 0;font:8px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--faint);}
+
 /* ---------- results ---------- */
 #screen-results{align-items:center;justify-content:center;}
 .confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
-.results-inner{position:relative;width:min(560px,92vw);max-height:100%;overflow-y:auto;text-align:center;padding:20px 4px calc(20px + var(--safe-b));}
+.results-inner{position:relative;width:min(620px,92vw);max-height:100%;overflow-y:auto;text-align:center;padding:20px 4px calc(20px + var(--safe-b));}
 /* The trophy arrives as a rubber stamp: struck once, slightly askew. */
 .trophy{width:132px;height:132px;margin:0 auto 18px;display:grid;place-items:center;border:1.5px solid var(--stamp-red);border-radius:50%;color:var(--stamp-red);transform:rotate(-4deg);animation:strike .5s cubic-bezier(.2,1.4,.4,1) both;}
 .trophy:before{content:"";position:absolute;width:120px;height:120px;border:1px solid var(--stamp-red);border-radius:50%;}

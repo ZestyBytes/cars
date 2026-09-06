@@ -21,7 +21,9 @@ Static site: no build step, no dependencies, no network needed after first load.
    you're hunting) or the portrait (whose button it is). The other one shows small in the
    footer of the sheet.
 2. **Begin journey** — each spotter's sheet is one big button. Tap anywhere on it to
-   score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar.
+   score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar. On a tablet
+   or the car's screen in landscape, the **all-time standings sit beside the board** and
+   update as you tap; a phone gives the whole screen to the buttons instead.
 3. **End journey** — the trophy stamp strikes, confetti falls, and the trip leaderboard
    appears. Trip scores reset for the next journey; all-time totals and journeys-won keep running.
 4. **All-time / Log** — the results screen has three tabs: this journey, all-time
@@ -70,10 +72,11 @@ side profile throws that away. Their studio background is shifted onto the archi
 paper tone so a plate sits on the page rather than glowing on it, and the dark theme
 dims the whole plate so it isn't a lamp in the face at night.
 
-## Notes on the car browser
+## Notes on tablets and the car browser
 
-The layout is landscape-first with large targets, so it works on the Tesla browser as
-well as a phone in a cradle: sheets sit side by side in landscape and stack in portrait.
+Built for a tablet in landscape first: sheets share the width equally however many
+spotters are playing, the all-time rail sits to the right of the board, and everything
+scales down to a phone in a cradle (rail hidden, sheets stacked in portrait).
 The service worker caches everything on first load, and the app asks for a screen wake
 lock while a journey is running so the display doesn't sleep mid-game.
 
