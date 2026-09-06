@@ -5,31 +5,28 @@ Tesla, a Honda Jazz, a tractor — and taps their sheet every time they see one.
 journey and a stamped trophy says who won.
 
 Styled as a road book in the same system as the [Noted](https://github.com/ZestyBytes/nota)
-archive: pale sage paper, Space Mono and Spectral, and every spotter mounted on their
-own specimen sheet with mounting tape, a pinned name tag and an accession number.
-Light by default, with a dark setting in the masthead for night drives.
+archive: pale sage paper, Space Mono and Spectral, and every player mounted on their
+own sheet with mounting tape and a pinned name tag. Light by default; tapping the
+“car spotter” title switches to the dark setting for night drives.
 
 Static site: no build step, no dependencies, no network needed after first load.
 
 ## Playing
 
-1. **Setup** — each spotter gets a name, a portrait, the car they're looking for, an ink
-   colour and a car silhouette. Tap the **Spotter** plate to set the portrait: upload a
-   photo, pick a character outline, or use their initials. Tap the **Specimen** plate for
-   the car (it also auto-picks itself from what you type).
-   **Big mark on the button** chooses which of the two fills the button — the car (what
-   you're hunting) or the portrait (whose button it is). The other one shows small in the
-   footer of the sheet.
-2. **Begin journey** — each spotter's sheet is one big button. Tap anywhere on it to
-   score. The `−` on the sheet undoes a mis-tap, as does `↶` in the top bar. On a tablet
+1. **Setup** — there are two cars in this game: the Tesla Model Y and the Honda Jazz.
+   A player has a name, an ink colour, and one of those two, tapped to choose. Dad is set
+   to the Model Y and Molly to the Jazz; extra players added for a trip pick one of the
+   same two (more than one player may hunt the same car).
+2. **Begin journey** — each player's sheet is one big button. Tap anywhere on it to
+   score. The `−` on the sheet undoes a mis-tap. On a tablet
    or the car's screen in landscape, the **all-time standings sit beside the board** and
    update as you tap; a phone gives the whole screen to the buttons instead.
 3. **End journey** — the trophy stamp strikes, confetti falls, and the trip leaderboard
    appears. Trip scores reset for the next journey; all-time totals and journeys-won keep running.
 4. **All-time / Log** — the results screen has three tabs: this journey, all-time
    standings, and the log of every journey ever finished (date, winner and each
-   spotter's tally).
-5. **Reset all** — erases every score, win and recorded journey. The spotters stay.
+   player's tally).
+5. **Reset all** — erases every score, win and recorded journey. The players stay.
 
 ## Where the scores live
 
@@ -45,12 +42,9 @@ wipes it. Two things guard against that:
   space. Adding the app to the home screen makes browsers far more likely to grant this.
 - Journeys in the log store names and tallies only, about 300 bytes each, so the archive
   stays small however long you play.
-- **Export** on the setup screen saves the whole archive — spotters, totals, journey log
-  — as a dated `.json` file, and **Import** loads one back. That is also how you move the
-  archive from the phone to the car, or restore it after a reset.
-
-If we later want one shared archive that syncs between devices by itself, that needs a
-backend (Supabase, the way `nota` does it) rather than browser storage.
+There is deliberately no export or import: the record simply lives on whichever device
+you play on. If the scores ever need to move between devices, or to survive a cleared
+browser, that wants a backend (Supabase, the way `nota` does it) rather than a file.
 
 ## Running it
 
@@ -75,7 +69,7 @@ relying on viewport arithmetic.
 ## Notes on tablets and the car browser
 
 Built for a tablet in landscape first: sheets share the width equally however many
-spotters are playing, the all-time rail sits to the right of the board, and everything
+players are playing, the all-time rail sits to the right of the board, and everything
 scales down to a phone in a cradle (rail hidden, sheets stacked in portrait).
 The service worker caches everything on first load, and the app asks for a screen wake
 lock while a journey is running so the display doesn't sleep mid-game.

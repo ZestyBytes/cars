@@ -11,33 +11,26 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
 
 <!-- ───────────────────────── SETUP ───────────────────────── -->
 <section id="screen-setup" class="screen is-active">
   <header class="topbar">
-    <h1 class="logo">car spotte<span>r</span><small>Road Book</small></h1>
+    <h1 class="logo">
+      <button class="logo-btn" id="btn-theme" type="button" aria-label="Switch to the dark setting" title="Tap the title for the dark setting">car spotte<span>r</span><small>Road Book</small></button>
+    </h1>
     <div class="topbar-actions">
-      <button class="icon-btn" id="btn-theme" type="button" aria-label="Switch to dark">☾</button>
       <button class="btn btn-ghost" id="btn-view-alltime" type="button">All-time</button>
     </div>
   </header>
 
   <div class="setup-scroll">
-    <p class="hint">Who is spotting, and which car are they looking for?</p>
-    <h2 class="section-title">Field party</h2>
+    <p class="hint">Who is playing, and which car are they looking for?</p>
+    <h2 class="section-title">Players</h2>
     <div id="player-editor" class="player-editor"></div>
-    <button class="btn btn-add" id="btn-add-player" type="button"><span class="plus">+</span> Add spotter</button>
-
-    <h2 class="section-title archive-title">Archive</h2>
-    <p class="hint archive-note" id="archive-note">Every finished journey is kept on this device.</p>
-    <div class="archive-actions">
-      <button class="btn btn-ghost" id="btn-export" type="button">Export</button>
-      <button class="btn btn-ghost" id="btn-import" type="button">Import</button>
-      <input type="file" id="import-file" accept="application/json,.json" hidden>
-    </div>
+    <button class="btn btn-add" id="btn-add-player" type="button"><span class="plus">+</span> Add player</button>
   </div>
 
   <footer class="setup-footer">
@@ -55,7 +48,6 @@
     </div>
     <div class="gamebar-right">
       <button class="icon-btn" id="btn-sound" type="button" title="Sound" aria-label="Toggle sound">♪</button>
-      <button class="icon-btn" id="btn-undo" type="button" title="Undo" aria-label="Undo last spot">↶</button>
       <button class="btn btn-end" id="btn-end" type="button">End journey</button>
     </div>
   </header>
@@ -93,7 +85,7 @@
 
     <div class="results-actions">
       <button class="btn btn-primary" id="btn-new-trip" type="button">New journey</button>
-      <button class="btn btn-ghost" id="btn-edit-players" type="button">Edit spotters</button>
+      <button class="btn btn-ghost" id="btn-edit-players" type="button">Edit players</button>
     </div>
   </div>
 </section>
@@ -110,7 +102,7 @@
   </div>
 </div>
 
-<script src="cars.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="cars.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

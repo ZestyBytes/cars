@@ -65,10 +65,9 @@ function save() {
     return true;
   } catch (err) {
     console.warn('Could not save game.', err);
-    // Photographs are the only thing here big enough to fill the store,
-    // so a failure needs saying rather than swallowing.
-    confirmDialog('The archive is full',
-      'There is no room left in this browser\u2019s storage. Remove a photograph, or export and reset the archive.',
+    // Silently losing a score would be worse than saying so.
+    confirmDialog('Could not save',
+      'There is no room left in this browser\u2019s storage, so the last score was not recorded.',
       () => {});
     return false;
   }
@@ -165,12 +164,12 @@ function playerCard(p) {
     <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
       <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
       <div class="pcard-fields">
-        <label class="field-label"><span>Spotter</span>
+        <label class="field-label"><span>Player</span>
           <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
         <span class="field-label"><span>Looking for</span></span>
         <div class="car-choice">${choices}</div>
         <div class="swatches">${swatches}</div>
-        ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove spotter</button>` : ''}
+        ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove player</button>` : ''}
       </div>
     </div>`;
 }
@@ -311,11 +310,6 @@ function unscore(id) {
   paintScore(p);
   renderStandings();
   blip(240);
-}
-
-function undoLast() {
-  const id = undoStack[undoStack.length - 1];
-  if (id) unscore(id);
 }
 
 function paintScore(p) {
@@ -543,54 +537,12 @@ function requestPersistence() {
   }
 }
 
-/* The setup screen says plainly what is on record and where it lives. */
-function paintArchiveNote() {
-  const n = state.journeys.length;
-  $('#archive-note').textContent = n
-    ? `${n} ${n === 1 ? 'journey' : 'journeys'} on record, kept in this browser. Export to keep a copy or move it to another device.`
-    : 'Finished journeys are recorded here, kept in this browser. Export to keep a copy or move it to another device.';
-}
-
-function exportArchive() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `car-spotter-${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function importArchive(file) {
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      if (!parsed || !Array.isArray(parsed.players)) throw new Error('not a Car Spotter archive');
-      state = Object.assign(DEFAULT_STATE(), parsed);
-      if (!Array.isArray(state.journeys)) state.journeys = [];
-      state.tripStart = null;
-      save();
-      applyTheme();
-      renderEditor();
-      paintArchiveNote();
-      showScreen('screen-setup');
-    } catch (err) {
-      confirmDialog('Could not read that file', 'It does not look like a Car Spotter archive.', () => {});
-    }
-  };
-  reader.readAsText(file);
-}
-
 /* ------------------------------ theme ------------------------------ */
 function applyTheme() {
   document.documentElement.dataset.theme = state.theme;
   const btn = $('#btn-theme');
   const dark = state.theme === 'dark';
-  btn.textContent = dark ? '\u2600' : '\u263e';
-  btn.setAttribute('aria-label', dark ? 'Switch to light' : 'Switch to dark');
+  btn.setAttribute('aria-label', dark ? 'Switch to the light setting' : 'Switch to the dark setting');
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', dark ? '#14160f' : '#eef0e7');
 }
@@ -629,14 +581,6 @@ function confirmDialog(title, body, onOk) {
 }
 
 /* ------------------------------ wiring ------------------------------ */
-$('#btn-export').addEventListener('click', exportArchive);
-$('#btn-import').addEventListener('click', () => $('#import-file').click());
-$('#import-file').addEventListener('change', (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (file) importArchive(file);
-  e.target.value = '';
-});
-
 $('#btn-theme').addEventListener('click', () => {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   save();
@@ -659,8 +603,6 @@ $('#btn-end').addEventListener('click', () => {
   confirmDialog('End this journey?', 'Trip scores get locked in and the all-time totals are kept.', endTrip);
 });
 
-$('#btn-undo').addEventListener('click', undoLast);
-
 $('#btn-sound').addEventListener('click', () => {
   state.sound = !state.sound;
   save();
@@ -676,12 +618,11 @@ $('#btn-new-trip').addEventListener('click', startTrip);
 
 $('#btn-edit-players').addEventListener('click', () => {
   renderEditor();
-  paintArchiveNote();
   showScreen('screen-setup');
 });
 
 $('#btn-reset-all').addEventListener('click', () => {
-  confirmDialog('Reset the whole archive?', 'Every score, win and recorded journey is erased. The spotters stay. Export first if you want to keep the log.', () => {
+  confirmDialog('Reset the whole archive?', 'Every score, win and recorded journey is erased. The players stay.', () => {
     state.players.forEach((p) => { p.trip = 0; p.total = 0; p.wins = 0; });
     state.tripNumber = 1;
     state.tripStart = null;
@@ -690,7 +631,6 @@ $('#btn-reset-all').addEventListener('click', () => {
     undoStack = [];
     save();
     renderEditor();
-    paintArchiveNote();
   });
 });
 
@@ -704,7 +644,6 @@ $('#btn-reset-all').addEventListener('click', () => {
   soundBtn.classList.toggle('is-off', !state.sound);
 
   renderEditor();
-  paintArchiveNote();
 
   if (state.tripStart) {
     // A journey was in progress when the app was closed — pick it back up.

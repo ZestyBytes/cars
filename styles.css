@@ -32,9 +32,11 @@ button,input{font:inherit;color:inherit;}
 
 /* ---------- masthead ---------- */
 .topbar{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:18px 22px 10px;}
-.logo{margin:0;font:700 clamp(26px,6vw,34px)/1 var(--mono);letter-spacing:-.02em;text-transform:lowercase;}
-.logo span{color:var(--stamp-red);}
-.logo small{display:block;margin-top:4px;font:11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.logo{margin:0;}
+.logo-btn{display:block;padding:0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;font:700 clamp(26px,6vw,34px)/1 var(--mono);letter-spacing:-.02em;text-transform:lowercase;}
+.logo-btn:active{opacity:.7;}
+.logo-btn span{color:var(--stamp-red);}
+.logo-btn small{display:block;margin-top:4px;font:11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
 .topbar-actions{display:flex;align-items:center;gap:8px;}
 
 .setup-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 22px 22px;}
@@ -208,11 +210,6 @@ img.panel-car{width:auto;height:auto;max-width:min(88%,360px);justify-self:cente
 .log-body small{display:block;font:10px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .log-meta{text-align:right;font:9px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint);white-space:nowrap;}
 .log-meta i{display:block;font-style:normal;}
-
-/* ---------- archive ---------- */
-.archive-title{margin-top:34px;}
-.archive-note{margin-bottom:12px;font-size:14px;}
-.archive-actions{display:flex;gap:10px;}
 
 /* ---------- picker and dialogs ---------- */
 .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(34,38,30,.5);}
