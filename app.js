@@ -6,24 +6,35 @@
 
 const STORE_KEY = 'carspotter.v1';
 
+/* The archive's per-topic inks: saturated specimen-label colours,
+   never pastel chips. */
 const COLORS = [
-  '#ff4d6d', '#4ea8ff', '#3ddc97', '#ffb020',
-  '#c77dff', '#ff7a45', '#26d0ce', '#f2f4f8',
+  '#1c6e63', '#a13a2e', '#3f6b2e', '#5b4a9e',
+  '#8a5a12', '#96355a', '#8a4a1a',
 ];
 
 const DEFAULT_STATE = () => ({
   version: 1,
   sound: true,
+  theme: 'light',
   tripNumber: 1,
   tripStart: null,
   players: [
-    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#4ea8ff', trip: 0, total: 0, wins: 0 },
-    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#ff4d6d', trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Dad', car: 'Tesla', shape: 'ev', color: '#1c6e63', trip: 0, total: 0, wins: 0 },
+    { id: uid(), name: 'Daughter', car: 'Honda Jazz', shape: 'hatch', color: '#a13a2e', trip: 0, total: 0, wins: 0 },
   ],
   lastTrip: null,
 });
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
+
+/* Every specimen sheet carries an accession number, always the same
+   one for a given player. */
+function accNo(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return `No. ${String(h % 10000).padStart(4, '0')}`;
+}
 
 /* ------------------------------ state ------------------------------ */
 let state = load();
@@ -87,7 +98,10 @@ function renderEditor() {
 
   wrap.querySelectorAll('[data-name]').forEach((el) => {
     el.addEventListener('input', () => {
-      findPlayer(el.dataset.name).name = el.value;
+      const p = findPlayer(el.dataset.name);
+      p.name = el.value;
+      const tag = el.closest('.pcard').querySelector('.mount-tag');
+      if (tag) tag.textContent = p.name || 'Unnamed';
       save();
     });
   });
@@ -134,15 +148,19 @@ function playerCard(p) {
   ).join('');
 
   return `
-    <div class="pcard" style="--c:${p.color}" data-card="${p.id}">
-      ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" aria-label="Remove ${escapeHtml(p.name)}" type="button">✕</button>` : ''}
-      <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change car shape for ${escapeHtml(p.name)}">
+    <div class="pcard sheet" style="--c:${p.color}" data-card="${p.id}">
+      <span class="mount-tag">${escapeHtml(p.name) || 'Unnamed'}</span>
+      <span class="acc-no">${accNo(p.id)}</span>
+      ${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}" type="button">Remove</button>` : ''}
+      <button class="pcard-preview" data-pick="${p.id}" type="button" aria-label="Change specimen type for ${escapeHtml(p.name)}">
         <span data-preview="${p.id}">${carSvg(p.shape)}</span>
         <small>change</small>
       </button>
       <div class="pcard-fields">
-        <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off">
-        <input class="field" data-car="${p.id}" value="${escapeHtml(p.car)}" placeholder="Car they're hunting" maxlength="24" autocomplete="off">
+        <label class="field-label"><span>Spotter</span>
+          <input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" placeholder="Name" maxlength="18" autocomplete="off"></label>
+        <label class="field-label"><span>Specimen</span>
+          <input class="field" data-car="${p.id}" value="${escapeHtml(p.car)}" placeholder="Car they're looking for" maxlength="24" autocomplete="off"></label>
         <div class="swatches">${swatches}</div>
       </div>
     </div>`;
@@ -218,16 +236,17 @@ function renderBoard() {
   const board = $('#board');
   board.dataset.count = state.players.length;
   board.innerHTML = state.players.map((p) => `
-    <div class="panel" style="--c:${p.color}" data-panel="${p.id}" role="button" tabindex="0"
+    <div class="panel sheet" style="--c:${p.color}" data-panel="${p.id}" role="button" tabindex="0"
          aria-label="${escapeHtml(p.name)} spotted a ${escapeHtml(p.car)}">
-      <div class="panel-name">${escapeHtml(p.name)}</div>
+      <span class="mount-tag">${escapeHtml(p.name)}</span>
+      <span class="acc-no">${accNo(p.id)}</span>
       ${carSvg(p.shape, 'panel-car')}
       <div class="panel-score" data-score="${p.id}">${p.trip}</div>
       <div class="panel-target">
-        <span>${escapeHtml(p.car)}</span>
-        <span class="panel-total">all-time ${p.total}</span>
+        <span class="chip">${escapeHtml(p.car)}</span>
+        <span class="panel-total">All-time ${p.total}</span>
+        <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
       </div>
-      <button class="panel-minus" data-minus="${p.id}" aria-label="Undo one for ${escapeHtml(p.name)}" type="button">−</button>
     </div>`).join('');
 
   $('#trip-number').textContent = state.tripNumber;
@@ -301,7 +320,7 @@ function paintScore(p) {
   el.classList.add('bump');
   const panel = el.closest('.panel');
   const total = panel && panel.querySelector('.panel-total');
-  if (total) total.textContent = `all-time ${p.total}`;
+  if (total) total.textContent = `All-time ${p.total}`;
 }
 
 function spawn(panel, cls, x, y, text) {
@@ -358,12 +377,12 @@ function showResults() {
     sub.textContent = 'Nobody saw a thing. Next time.';
   } else if (t.winnerIds.length > 1) {
     const names = t.scores.filter((s) => t.winnerIds.includes(s.id)).map((s) => s.name);
-    kicker.textContent = `Journey ${t.number} · ${fmtDuration(t.duration)}`;
+    kicker.textContent = `Journey No. ${t.number} · ${fmtDuration(t.duration)}`;
     winner.textContent = "It's a tie!";
     sub.textContent = `${names.join(' & ')} — ${Math.max(...t.scores.map((s) => s.score))} each`;
   } else {
     const w = t.scores.find((s) => s.id === t.winnerIds[0]);
-    kicker.textContent = `Journey ${t.number} · ${fmtDuration(t.duration)}`;
+    kicker.textContent = `Journey No. ${t.number} · ${fmtDuration(t.duration)}`;
     winner.textContent = `${w.name} wins!`;
     sub.textContent = `${w.score} × ${w.car}`;
   }
@@ -398,9 +417,9 @@ function renderLeaderboard(which) {
 
   list.innerHTML = rows.map((r, i) => `
     <li class="lb-row ${i === 0 ? 'is-first' : ''}" style="--c:${r.color}">
-      <span class="lb-rank">${i === 0 ? '🏆' : i + 1}</span>
+      <span class="lb-rank">${i === 0 ? '1st' : `${i + 1}${['th', 'st', 'nd', 'rd'][(i + 1) % 10] || 'th'}`}</span>
       <span class="lb-car">${carSvg(r.shape)}</span>
-      <span class="lb-name">${escapeHtml(r.name)}<small>${escapeHtml(r.sub)}</small></span>
+      <span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span>
       <span class="lb-score">${r.value}</span>
     </li>`).join('');
 }
@@ -417,7 +436,7 @@ function runConfetti() {
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const palette = state.players.map((p) => p.color).concat(['#f6c445', '#ffffff']);
+  const palette = state.players.map((p) => p.color).concat(['#a13a2e', '#3f6b2e', '#8a5a12']);
   const bits = Array.from({ length: 120 }, () => ({
     x: Math.random() * w,
     y: -Math.random() * h * 0.6,
@@ -473,6 +492,17 @@ function blip(freq) {
   } catch (err) { /* audio is a nicety, never a blocker */ }
 }
 
+/* ------------------------------ theme ------------------------------ */
+function applyTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  const btn = $('#btn-theme');
+  const dark = state.theme === 'dark';
+  btn.textContent = dark ? '\u2600' : '\u263e';
+  btn.setAttribute('aria-label', dark ? 'Switch to light' : 'Switch to dark');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', dark ? '#14160f' : '#eef0e7');
+}
+
 /* ------------------------------ wake lock ------------------------------ */
 async function requestWakeLock() {
   try {
@@ -507,6 +537,12 @@ function confirmDialog(title, body, onOk) {
 }
 
 /* ------------------------------ wiring ------------------------------ */
+$('#btn-theme').addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  save();
+  applyTheme();
+});
+
 $('#shape-close').addEventListener('click', () => { $('#shape-modal').hidden = true; });
 $('#shape-modal').addEventListener('click', (e) => {
   if (e.target.id === 'shape-modal') e.currentTarget.hidden = true;
@@ -533,7 +569,7 @@ $('#btn-sound').addEventListener('click', () => {
   state.sound = !state.sound;
   save();
   const btn = $('#btn-sound');
-  btn.textContent = state.sound ? '🔊' : '🔇';
+  btn.textContent = state.sound ? '\u266a' : '\u266a\u0338';
   btn.classList.toggle('is-off', !state.sound);
   if (state.sound) blip(660);
 });
@@ -561,8 +597,10 @@ $('#btn-reset-all').addEventListener('click', () => {
 
 /* ------------------------------ boot ------------------------------ */
 (function boot() {
+  applyTheme();
+
   const soundBtn = $('#btn-sound');
-  soundBtn.textContent = state.sound ? '🔊' : '🔇';
+  soundBtn.textContent = state.sound ? '\u266a' : '\u266a\u0338';
   soundBtn.classList.toggle('is-off', !state.sound);
 
   renderEditor();
