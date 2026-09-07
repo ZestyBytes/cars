@@ -15,7 +15,6 @@ const SOUNDS = [
   { name: 'Birdsong', notes: [587.33, 783.99], type: 'triangle', hold: .14 },
   { name: 'Low bell', notes: [349.23, 440], type: 'triangle', hold: .2 },
 ];
-const COLOR_NAMES = ['Teal', 'Terracotta', 'Green', 'Purple', 'Ochre', 'Berry'];
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const escapeHtml = str => String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -26,6 +25,11 @@ catch { state = Game.fresh(); loadWarning = true; }
 // Retain historical weighted scores and undo events; future sightings are one point.
 Game.simplify(state);
 state.players.forEach((p, i) => { if (!Number.isInteger(p.sound) || !SOUNDS[p.sound]) p.sound = i % SOUNDS.length; });
+// Colours are assigned rather than chosen, so make sure no two share one.
+state.players.forEach((p, i) => {
+  const taken = state.players.slice(0, i).map(q => q.color);
+  if (!COLORS.includes(p.color) || taken.includes(p.color)) p.color = COLORS.find(c => !taken.includes(c)) || COLORS[i % COLORS.length];
+});
 let timerId, wakeLock, audioCtx, toastTimer, toastAction, modalReturnFocus, modalCleanup;
 let currentTab = 'trip';
 function save() {
@@ -46,19 +50,20 @@ function showScreen(id) {
 }
 function renderEditor() {
   $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
-    <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
-    <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Choose car for ${escapeHtml(p.name || 'player')}">${carMark(p.car)}<span>Change car ↗</span></button>
+    <div class="pcard-top"><strong>PLAYER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
+    <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Change the car for ${escapeHtml(p.name || 'this player')} (currently ${carLabel(p.car)})" title="Tap the car to change it">${carMark(p.car)}</button>
       <div class="pcard-fields"><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
-      <div><p class="eyebrow">Looking for</p><h3 class="selected-car-name">${carLabel(p.car)}</h3></div>
-      <div class="swatches" aria-label="Player colour">${COLORS.map((c, i) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}" aria-pressed="${c === p.color}" aria-label="${COLOR_NAMES[i]}"></button>`).join('')}</div>
       <label>Point sound<div class="sound-picker"><select data-sound="${p.id}" aria-label="Sound for ${escapeHtml(p.name)}">${SOUNDS.map((sound, n) => `<option value="${n}" ${n === (p.sound ?? i % SOUNDS.length) ? 'selected' : ''}>${sound.name}</option>`).join('')}</select><button class="btn" data-preview="${p.id}" aria-label="Preview sound for ${escapeHtml(p.name)}">▶</button></div></label>
-      <p class="hint">${p.bests[p.car] ? `Best trip: ${p.bests[p.car]} ${carLabel(p.car)} spots` : 'A fresh page for your next adventure.'}</p></div></div></article>`).join('');
-  $('#ready-players').innerHTML = state.players.map(p => `<span>${carMark(p.car)}<b>${escapeHtml(p.name || 'Player')}</b><small>${carLabel(p.car)}</small></span>`).join('');
+      ${p.bests[p.car] ? `<p class="hint">Best trip: ${p.bests[p.car]} ${carLabel(p.car)} spots</p>` : ''}</div></div></article>`).join('');
+  // The posters already name the cars, so the row carries only the players.
+  $('#ready-players').innerHTML = state.players.map(p => `<span class="ready-player">${carMark(p.car)}<b>${escapeHtml(p.name || 'Player')}</b></span>`).join('')
+    + (state.players.length < 6 ? '<button class="ready-add" id="ready-add" aria-label="Add a player"><span class="ready-add-mark">+</span><b>Add player</b></button>' : '');
+  const readyAdd = $('#ready-add');
+  if (readyAdd) readyAdd.onclick = addPlayer;
   $$('[data-sound]').forEach(el => el.onchange = () => { findPlayer(el.dataset.sound).sound = Number(el.value); save(); });
   $$('[data-preview]').forEach(el => el.onclick = () => playerSound(el.dataset.preview, true));
   $$('[data-name]').forEach(el => el.oninput = () => { findPlayer(el.dataset.name).name = el.value; save(); });
   $$('[data-pick]').forEach(el => el.onclick = () => openLibrary(el.dataset.pick));
-  $$('[data-color]').forEach(el => el.onclick = () => { findPlayer(el.dataset.color).color = el.dataset.value; save(); renderEditor(); });
 
   $$('[data-remove]').forEach(el => el.onclick = () => confirmDialog('Remove this player?', 'Their previous trips stay in the log. Their current overall totals will be removed from the leaderboard.', () => {
     state.players = state.players.filter(p => p.id !== el.dataset.remove); save(); renderEditor();
@@ -256,7 +261,23 @@ function runConfetti() {
   } requestAnimationFrame(frame);
 }
 $$('[data-theme-toggle]').forEach(el => el.onclick = toggleTheme);
-$('#btn-add-player').onclick = () => { if (state.players.length >= 6) return; state.players.push(Game.player('', 'fiesta', COLORS[state.players.length % COLORS.length])); save(); renderEditor(); const input = $$('[data-name]').at(-1); input.focus(); input.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+function freeColor() {
+  const taken = state.players.map(p => p.color);
+  return COLORS.find(c => !taken.includes(c)) || COLORS[state.players.length % COLORS.length];
+}
+function addPlayer() {
+  if (state.players.length >= 6) return;
+  state.players.push(Game.player('', 'fiesta', freeColor()));
+  save();
+  // Open the editor on the new card, whichever button was used.
+  $('#setup-editor').hidden = false;
+  $('#btn-edit-setup').textContent = 'Done editing';
+  renderEditor();
+  const input = $$('[data-name]').at(-1);
+  input.focus({ preventScroll: true });
+  input.closest('.pcard').scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+$('#btn-add-player').onclick = addPlayer;
 $('#btn-start').onclick = () => startTrip();
 $('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
 $('#btn-new-trip').onclick = () => startTrip();

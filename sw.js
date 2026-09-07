@@ -1,8 +1,8 @@
 /* Versioned, atomic offline shell. All ten posters are available offline.
    Never substitute HTML for a failed image or cache unrelated origins. */
-const CACHE = 'spotted-v13';
+const CACHE = 'spotted-v14';
 const ASSETS = [
-  './', './index.html', './styles.css?v=13', './cars.js?v=13', './game.js?v=13', './app.js?v=13',
+  './', './index.html', './styles.css?v=14', './cars.js?v=14', './game.js?v=14', './app.js?v=14',
   './manifest.json', './icon.svg',
   './assets/cars/tesla-model-y.webp', './assets/cars/honda-jazz.webp',
   './assets/cars/ford-fiesta.webp', './assets/cars/vauxhall-corsa.webp',

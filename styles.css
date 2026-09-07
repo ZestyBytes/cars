@@ -48,15 +48,12 @@ img{max-width:100%}
 .pcard-body{display:grid;grid-template-columns:minmax(100px,140px) 1fr;gap:20px;align-items:center}
 .car-select{padding:0;background:transparent;border:0;position:relative}
 .car-select .car-plate{width:100%;height:auto;aspect-ratio:4/5;object-fit:contain;border-radius:3px;box-shadow:0 5px 12px #0002}
-.car-select span{display:block;margin-top:8px;text-align:center;font-size:14px;text-decoration:underline;text-underline-offset:4px}
+.car-select{border-radius:4px}
+.car-select:hover .car-plate,.car-select:focus-visible .car-plate{box-shadow:0 6px 16px #0003;transform:translateY(-2px)}
+.car-select .car-plate{transition:transform .12s ease,box-shadow .12s ease}
 .pcard-fields{display:grid;gap:12px;min-width:0}
 .pcard-fields label,.option-grid>label{font-size:14px;font-weight:600;display:grid;gap:7px}
 .field,select{min-width:0;width:100%;background:var(--paper);border:1px solid var(--line);border-radius:5px;min-height:48px;padding:10px;font-size:16px}
-.swatches{display:flex;gap:4px;flex-wrap:wrap}
-.swatch{width:44px;height:44px;border:2px solid transparent;background:transparent;padding:9px;border-radius:50%}
-.swatch:before{content:'';display:block;background:var(--sc);width:22px;height:22px;border-radius:50%}
-.swatch[aria-pressed=true]{border-color:var(--ink)}
-.selected-car-name{font-family:var(--serif);font-size:23px}
 .car-value{display:flex;gap:8px;align-items:center;font-size:14px}
 .car-value input{width:64px}
 .btn-add{width:100%;background:transparent;border-style:dashed;margin-top:16px}
@@ -68,7 +65,8 @@ img{max-width:100%}
 .check-option small{display:block;color:var(--muted);font-weight:400;margin-top:3px}
 .setup-footer,.results-actions{padding:16px 32px calc(16px + env(safe-area-inset-bottom,0px));display:flex;gap:12px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);background:var(--paper)}
 .setup-footer{position:sticky;bottom:0;z-index:3}
-.btn-start{min-width:240px;min-height:56px;font-size:18px}
+.btn-start{min-width:240px;font-size:18px}
+.setup-footer .btn{min-height:56px}
 .car-plate{object-fit:contain;display:block;width:auto;height:auto}
 :root[data-theme=dark] .car-plate{filter:brightness(.72) saturate(.9)}
 
@@ -420,12 +418,18 @@ progress::-moz-progress-bar{background:var(--green)}
 .score-line{pointer-events:none}
 .sound-picker{display:flex;gap:8px}.sound-picker select{flex:1}.sound-picker .btn{min-width:48px}
 .ready-players{display:flex;justify-content:center;gap:24px;margin:20px 0 28px;flex-wrap:wrap}
-.ready-players>span{display:grid;justify-items:center;gap:5px;width:150px}
+.ready-players>span,.ready-add{display:grid;justify-items:center;gap:5px;width:150px}
 .ready-players img{width:100%;height:180px;object-fit:contain}
 .ready-players b{font:24px var(--serif)}.ready-players small{color:var(--muted)}
+/* An empty place at the end of the line-up, sized like a player so the row
+   reads as "these three, and room for another". */
+.ready-add{min-height:190px;background:transparent;border:1px dashed var(--line);border-radius:8px;padding:12px 8px;color:var(--muted);align-content:center}
+.ready-add:hover{border-color:var(--ink);color:var(--ink)}
+.ready-add-mark{font:300 46px/1 var(--serif);color:var(--red)}
+.ready-add b{font:17px var(--serif)}
 #setup-editor{margin-top:20px}
 .results-layout{display:flex;flex-direction:column;gap:24px;justify-content:center;max-width:850px}
 .result-record{width:100%;border-top:0;padding:0;margin:0}
 .tabs{justify-content:center}.leaderboard{max-width:650px;margin:auto}
 .result-celebration{width:100%}
-@media(max-width:480px){.ready-players{gap:14px}.ready-players>span{width:110px}.ready-players img{height:140px}}
+@media(max-width:480px){.ready-players{gap:14px}.ready-players>span,.ready-add{width:110px}.ready-players img{height:140px}.ready-add{min-height:150px}}

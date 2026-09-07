@@ -8,22 +8,25 @@ Your usual players and cars appear ready to start; editing is optional. Tap a pl
 
 ## Playing
 
-- Choose names, colours and cars from the searchable ten-car library.
+- Choose names and cars from the searchable ten-car library. Player colours are
+  assigned automatically, so no two players share one.
 - Tap the poster/score area to add a point. Players choose a two-note sound in their settings, with a preview button;
   the speaker icon mutes them. There are no scoring pop-ups. The score briefly grows on a hit, and the tap hint disappears after three spots. Text selection, image dragging and hold menus are disabled on the playing surface; name fields remain editable.
 - Each player's separate −1 control removes their latest sighting.
-- Finish trip goes straight to the results, without confirmation. Reopen trip
-  restores the latest trip and reverses its win/best awards so mistakes can be
-  corrected. Reopening is available until the next trip or a roster change.
-- Play again keeps the cars; Swap cars & play swaps or rotates them.
+- Finish sits in the game footer beside Leaderboard, marked with a chequered
+  flag, and goes straight to the results without confirmation.
+- Play again keeps the same players and cars.
 - The results show final player scores once, with the full leaderboard behind Overall and Log.
-- Personal bests appear as compact records. First-ever scores are not announced.
+- Personal bests appear as starred records, including a player's first one, and a
+  player beating their own record sees "★ Best ever!" on their card during the trip.
+- The winner's confetti comes with a short fanfare unless sound is muted.
 - Tap the Spotted logo on the player setup screen to switch day/night mode.
-  The game header contains only the trip number, time, sound and finish controls.
+  The game header contains only the trip number, time and the sound control.
 
 Portrait uses compact, equal player rows, including for three players. Landscape
 places players alongside each other; short windows put artwork beside the score.
-Up to six players are supported, with scrolling when necessary.
+Up to six players are supported, with scrolling when necessary. Add player sits both
+in the ready line-up and in the editor; either opens the editor on the new card.
 
 ## Saved records
 
