@@ -1,7 +1,7 @@
 # Spotted · The family road book
 
 A simple family car-spotting game for the Tesla browser, tablets and phones.
-Choose players and cars, then tap a player's poster when they spot one.
+Your usual players and cars appear ready to start; editing is optional. Tap a player's poster when they spot one.
 **One car, one point.**
 
 [Play Spotted](https://zestybytes.github.io/cars/)
@@ -9,14 +9,14 @@ Choose players and cars, then tap a player's poster when they spot one.
 ## Playing
 
 - Choose names, colours and cars from the searchable ten-car library.
-- Tap the poster/score area to add a point. Players have distinct two-note sounds;
-  the speaker icon mutes them. There are no scoring pop-ups.
-- Each player's separate Undo control removes their latest sighting.
+- Tap the poster/score area to add a point. Players choose a two-note sound in their settings, with a preview button;
+  the speaker icon mutes them. There are no scoring pop-ups. The score briefly grows on a hit, and the tap hint disappears after three spots. Text selection, image dragging and hold menus are disabled on the playing surface; name fields remain editable.
+- Each player's separate −1 control removes their latest sighting.
 - Finish trip goes straight to the results, without confirmation. Reopen trip
   restores the latest trip and reverses its win/best awards so mistakes can be
   corrected. Reopening is available until the next trip or a roster change.
 - Play again keeps the cars; Swap cars & play swaps or rotates them.
-- The leaderboard separates this trip, overall points and the trip log.
+- The results show final player scores once, with the full leaderboard behind Overall and Log.
 - Personal bests appear as compact records. First-ever scores are not announced.
 - Tap the Spotted logo on the player setup screen to switch day/night mode.
   The game header contains only the trip number, time, sound and finish controls.
@@ -61,5 +61,7 @@ node --test tests/*.test.cjs
 the collection; `sw.js` caches the offline shell. Tests include legacy migration,
 undo, recovery, records, mode simplification and offline handling. Historical mode
 accounting remains in the model for compatibility with saved records.
+
+Optional browser checks: start the local server and run `node tests/browser-check.cjs` with Playwright and its Chromium/WebKit browsers installed. These cover two and three players at portrait, landscape and Tesla-sized viewports, sound settings, scoring/correction and result tabs.
 
 Pushing main publishes to GitHub Pages via the existing workflow.

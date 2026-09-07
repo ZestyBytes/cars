@@ -1,6 +1,7 @@
 /* Spotted: a dependency-free, device-local family road book. */
 const STORE_KEY = 'carspotter.v1'; // Keep the original key and migrate in place.
 const COLORS = ['#1c6e63', '#a13a2e', '#3f6b2e', '#5b4a9e', '#8a5a12', '#96355a'];
+const SOUNDS = [{ name: 'Warm bell', notes: [392, 523.25] }, { name: 'Bright chime', notes: [659.25, 880] }, { name: 'Marimba', notes: [523.25, 659.25] }, { name: 'Soft steps', notes: [440, 587.33] }, { name: 'Birdsong', notes: [587.33, 783.99] }, { name: 'Low bell', notes: [349.23, 440] }];
 const COLOR_NAMES = ['Teal', 'Terracotta', 'Green', 'Purple', 'Ochre', 'Berry'];
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -11,6 +12,7 @@ try { state = Game.migrate(JSON.parse(localStorage.getItem(STORE_KEY)), CARS); }
 catch { state = Game.fresh(); loadWarning = true; }
 // Retain historical weighted scores and undo events; future sightings are one point.
 Game.simplify(state);
+state.players.forEach((p, i) => { if (!Number.isInteger(p.sound) || !SOUNDS[p.sound]) p.sound = i % SOUNDS.length; });
 let timerId, wakeLock, audioCtx, toastTimer, toastAction, modalReturnFocus, modalCleanup;
 let currentTab = 'trip';
 function save() {
@@ -36,7 +38,11 @@ function renderEditor() {
       <div class="pcard-fields"><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
       <div><p class="eyebrow">Looking for</p><h3 class="selected-car-name">${carLabel(p.car)}</h3></div>
       <div class="swatches" aria-label="Player colour">${COLORS.map((c, i) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}" aria-pressed="${c === p.color}" aria-label="${COLOR_NAMES[i]}"></button>`).join('')}</div>
+      <label>Point sound<div class="sound-picker"><select data-sound="${p.id}" aria-label="Sound for ${escapeHtml(p.name)}">${SOUNDS.map((sound, n) => `<option value="${n}" ${n === (p.sound ?? i % SOUNDS.length) ? 'selected' : ''}>${sound.name}</option>`).join('')}</select><button class="btn" data-preview="${p.id}" aria-label="Preview sound for ${escapeHtml(p.name)}">▶</button></div></label>
       <p class="hint">${p.bests[p.car] ? `Best trip: ${p.bests[p.car]} ${carLabel(p.car)} spots` : 'A fresh page for your next adventure.'}</p></div></div></article>`).join('');
+  $('#ready-players').innerHTML = state.players.map(p => `<span>${carMark(p.car)}<b>${escapeHtml(p.name || 'Player')}</b><small>${carLabel(p.car)}</small></span>`).join('');
+  $$('[data-sound]').forEach(el => el.onchange = () => { findPlayer(el.dataset.sound).sound = Number(el.value); save(); });
+  $$('[data-preview]').forEach(el => el.onclick = () => playerSound(el.dataset.preview, true));
   $$('[data-name]').forEach(el => el.oninput = () => { findPlayer(el.dataset.name).name = el.value; save(); });
   $$('[data-pick]').forEach(el => el.onclick = () => openLibrary(el.dataset.pick));
   $$('[data-color]').forEach(el => el.onclick = () => { findPlayer(el.dataset.color).color = el.dataset.value; save(); renderEditor(); });
@@ -74,8 +80,11 @@ function renderBoard() {
       <span class="panel-name"><span class="name-tag">${escapeHtml(p.name)}</span></span><span class="panel-model">${carLabel(p.car)}</span>
       <span class="panel-art">${carMark(p.car)}</span><span class="score-line"><span class="panel-score" data-score="${p.id}">${p.tripPoints}</span><span class="score-unit">points</span></span>
       <span class="spot-label">Tap to spot · +1</span>
-    </button><div class="panel-bottom"><span class="panel-detail" data-detail="${p.id}"></span><button class="btn panel-minus" data-minus="${p.id}" aria-label="Undo last sighting for ${escapeHtml(p.name)}">− Undo</button></div></article>`).join('');
-  $$('[data-spot]').forEach(el => el.onclick = () => score(el.dataset.spot));
+    </button><div class="panel-bottom"><span class="panel-detail" data-detail="${p.id}"></span><button class="btn panel-minus" data-minus="${p.id}" aria-label="Undo last sighting for ${escapeHtml(p.name)}">−1</button></div></article>`).join('');
+  $$('[data-panel]').forEach(el => {
+    el.onclick = e => { if (!e.target.closest('[data-minus]')) score(el.dataset.panel); };
+    ['contextmenu', 'selectstart', 'dragstart'].forEach(type => el.addEventListener(type, e => e.preventDefault()));
+  });
   $$('[data-minus]').forEach(el => el.onclick = () => unscore(el.dataset.minus));
   $('#trip-number').textContent = state.tripNumber;
   updateGame();
@@ -95,6 +104,7 @@ function standingsMarkup() {
   return ranked.map(p => `<li class="standing"><span class="player-dot" style="--c:${p.color}"></span><span class="standing-who"><b>${escapeHtml(p.name)}</b><small>${p.total !== p.points ? `${p.total} cars · ` : ''}${p.wins} ${p.wins === 1 ? 'win' : 'wins'}</small></span><span class="standing-total">${p.points}</span></li>`).join('');
 }
 function updateGame() {
+  $('#board').classList.toggle('is-familiar', (state.spotTaps || 0) >= 3);
   state.players.forEach(p => {
     const score = $(`[data-score="${p.id}"]`);
     if (score) score.textContent = p.tripPoints;
@@ -111,7 +121,10 @@ function updateGame() {
 function score(id) {
   const event = Game.add(state, id);
   if (!event) return;
+  state.spotTaps = (state.spotTaps || 0) + 1;
   save(); updateGame();
+  const number = $(`[data-score="${id}"]`);
+  if (number) { number.classList.remove('score-bump'); void number.offsetWidth; number.classList.add('score-bump'); }
   const panel = $(`[data-panel="${id}"]`);
   if (panel) { panel.classList.remove('is-hit'); void panel.offsetWidth; panel.classList.add('is-hit'); }
   playerSound(id);
@@ -136,11 +149,15 @@ function showResults(celebrate = false, archive = false) {
   $('#btn-swap').hidden = state.players.length < 2;
   $('#btn-new-trip').textContent = archive ? 'Begin trip →' : 'Play again →';
   $('[data-tab="trip"]').hidden = !t;
-  setTab(archive || matchMedia('(min-width:1200px)').matches ? 'all' : 'trip'); showScreen('screen-results');
+  $('#screen-results').classList.toggle('archive-view', archive);
+  setTab(archive ? 'all' : 'trip'); showScreen('screen-results');
   if (celebrate && winners.length) runConfetti();
 }
 function setTab(which) {
   currentTab = which;
+  const summary = which === 'trip' && !$('#screen-results').classList.contains('archive-view');
+  $('.result-celebration').hidden = !summary;
+  $('#leaderboard').hidden = summary;
   $$('.tab').forEach(el => { el.classList.toggle('is-active', el.dataset.tab === which); el.setAttribute('aria-pressed', el.dataset.tab === which); });
   const list = $('#leaderboard');
   if (which === 'log') {
@@ -169,14 +186,15 @@ function soundLabel() {
   button.title = state.sound ? 'Mute sound' : 'Enable sound';
 }
 // Distinct, gentle two-note signatures follow the player, not their car.
-function playerSound(id) {
+function playerSound(id, preview = false) {
+  const p = findPlayer(id);
   const index = Math.max(0, state.players.findIndex(p => p.id === id));
-  const notes = [[392, 523.25], [659.25, 880], [523.25, 659.25], [440, 587.33], [587.33, 783.99], [349.23, 440]][index % 6];
-  blip(notes[0]);
-  setTimeout(() => blip(notes[1]), 95);
+  const notes = SOUNDS[p?.sound ?? index % SOUNDS.length].notes;
+  blip(notes[0], preview);
+  setTimeout(() => blip(notes[1], preview), 95);
 }
-function blip(freq) {
-  if (!state.sound) return;
+function blip(freq, preview = false) {
+  if (!state.sound && !preview) return;
   try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'triangle'; osc.frequency.value = freq;
     gain.gain.setValueAtTime(.001, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(.07, audioCtx.currentTime + .01); gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .14);
@@ -215,9 +233,10 @@ function runConfetti() {
 $$('[data-theme-toggle]').forEach(el => el.onclick = toggleTheme);
 $('#btn-add-player').onclick = () => { if (state.players.length >= 6) return; state.players.push(Game.player('', 'fiesta', COLORS[state.players.length % COLORS.length])); save(); renderEditor(); const input = $$('[data-name]').at(-1); input.focus(); input.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
 $('#btn-start').onclick = () => startTrip();
+$('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
 $('#btn-new-trip').onclick = () => startTrip();
 $('#btn-swap').onclick = () => startTrip(true);
-$('#btn-edit-players').onclick = () => { renderEditor(); showScreen('screen-setup'); };
+$('#btn-edit-players').onclick = () => { $('#setup-editor').hidden = false; $('#btn-edit-setup').textContent = 'Done editing'; renderEditor(); showScreen('screen-setup'); };
 $('#btn-reopen').onclick = () => { if (Game.reopen(state)) { Game.simplify(state); renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Trip reopened. You can undo the last sighting.'); } };
 $('#btn-view-alltime').onclick = () => showResults(false, true);
 $('#btn-end').onclick = endTrip;

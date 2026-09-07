@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css?v=11">
+<link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
 <section id="screen-setup" class="screen is-active">
@@ -18,12 +18,12 @@
     <div class="topbar-actions"><button class="btn" id="btn-view-alltime">Leaderboard</button></div>
   </header>
   <main class="setup-scroll">
-    <div class="section-heading"><div><p class="eyebrow">The next trip</p><h2>Who’s coming along?</h2></div><span class="edition">England collection · 10 cars</span></div>
-    <div id="player-editor" class="player-editor"></div>
-    <button class="btn btn-add" id="btn-add-player">+ Add player</button>
+    <div class="section-heading"><div><p class="eyebrow">The next trip</p><h2>Ready for a trip?</h2></div><span class="edition">England collection · 10 cars</span></div>
+    <div id="ready-players" class="ready-players"></div><button class="btn" id="btn-edit-setup">Edit players</button><div id="setup-editor" hidden><div id="player-editor" class="player-editor"></div>
+    <button class="btn btn-add" id="btn-add-player">+ Add player</button></div>
 
   </main>
-  <footer class="setup-footer"><button class="btn btn-danger-ghost" id="btn-reset-all">Reset archive</button><button class="btn btn-primary btn-start" id="btn-start">Let’s go →</button></footer>
+  <footer class="setup-footer"><button class="btn btn-danger-ghost" id="btn-reset-all">Reset archive</button><button class="btn btn-primary btn-start" id="btn-start">Start trip →</button></footer>
 </section>
 <section id="screen-game" class="screen">
   <header class="gamebar"><div class="gamebar-left"><div><span class="eyebrow">Trip <span id="trip-number">1</span></span><span class="trip-timer" id="trip-timer">00:00</span></div></div>
@@ -41,6 +41,6 @@
 </section>
 <div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><h2 id="modal-title"></h2><button class="btn" id="modal-close" aria-label="Close dialog">Close</button></div><div id="modal-content"></div></div></div>
 <div class="toast" id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button class="btn" id="toast-undo">Undo</button><button class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification">×</button></div>
-<script src="cars.js?v=11"></script><script src="game.js?v=11"></script><script src="app.js?v=11"></script>
+<script src="cars.js?v=12"></script><script src="game.js?v=12"></script><script src="app.js?v=12"></script>
 </body>
 </html>
