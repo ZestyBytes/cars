@@ -405,3 +405,20 @@ progress::-moz-progress-bar{background:var(--green)}
 .record-note .eyebrow{grid-column:1;font-size:10px}
 .record-note>span:not(.eyebrow){grid-column:1;color:var(--muted)}
 .record-note>strong{grid-column:2;grid-row:1/3;align-self:center;font:32px var(--serif)}
+/* Keep selection and image callouts off the playing surface, not text fields. */
+.panel,.panel *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.panel img{-webkit-user-drag:none;pointer-events:none}
+.panel{cursor:pointer}
+.is-familiar .spot-label{visibility:hidden}
+.score-line{pointer-events:none}
+.sound-picker{display:flex;gap:8px}.sound-picker select{flex:1}.sound-picker .btn{min-width:48px}
+.ready-players{display:flex;justify-content:center;gap:24px;margin:20px 0 28px;flex-wrap:wrap}
+.ready-players>span{display:grid;justify-items:center;gap:5px;width:150px}
+.ready-players img{width:100%;height:180px;object-fit:contain}
+.ready-players b{font:24px var(--serif)}.ready-players small{color:var(--muted)}
+#setup-editor{margin-top:20px}
+.results-layout{display:flex;flex-direction:column;gap:24px;justify-content:center;max-width:850px}
+.result-record{width:100%;border-top:0;padding:0;margin:0}
+.tabs{justify-content:center}.leaderboard{max-width:650px;margin:auto}
+.result-celebration{width:100%}
+@media(max-width:480px){.ready-players{gap:14px}.ready-players>span{width:110px}.ready-players img{height:140px}}
