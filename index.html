@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
 <section id="screen-setup" class="screen is-active">
@@ -23,24 +23,24 @@
     <button class="btn btn-add" id="btn-add-player">+ Add player</button></div>
 
   </main>
-  <footer class="setup-footer"><button class="btn btn-danger-ghost" id="btn-reset-all">Reset archive</button><button class="btn btn-primary btn-start" id="btn-start">Start trip →</button></footer>
+  <footer class="setup-footer"><button class="btn btn-danger-ghost" id="btn-reset-all">Reset scores</button><button class="btn btn-primary btn-start" id="btn-start">Start trip →</button></footer>
 </section>
 <section id="screen-game" class="screen">
   <header class="gamebar"><div class="gamebar-left"><div><span class="eyebrow">Trip <span id="trip-number">1</span></span><span class="trip-timer" id="trip-timer">00:00</span></div></div>
-    <div class="gamebar-right"><button class="btn sound-toggle" id="btn-sound" aria-pressed="true" aria-label="Mute sound"></button><button class="btn btn-end" id="btn-end">Finish</button></div>
+    <div class="gamebar-right"><button class="btn sound-toggle" id="btn-sound" aria-pressed="true" aria-label="Mute sound"></button></div>
   </header>
   <div class="play"><main id="board" class="board"></main><aside class="standings" aria-label="Trip and overall leaderboard"><div class="rail-lead"><p class="eyebrow">This trip</p><h2 id="rail-leader">Off we go!</h2><p id="rail-gap"></p></div><h2 class="eyebrow rail-title">Overall points</h2><ol id="standings-list" class="standings-list"></ol><p id="standings-foot" class="hint"></p></aside></div>
-  <footer class="game-footer"><div class="live-summary"><strong id="live-leader">Off we go!</strong></div><div class="footer-actions"><button class="btn" id="btn-game-standings">Leaderboard</button></div></footer>
+  <footer class="game-footer"><div class="live-summary"><strong id="live-leader">Off we go!</strong></div><div class="footer-actions"><button class="btn" id="btn-game-standings">Leaderboard</button><button class="btn btn-end" id="btn-end"><svg class="flag" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3v18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><g fill="currentColor"><rect x="7" y="4" width="4" height="4"/><rect x="15" y="4" width="4" height="4"/><rect x="11" y="8" width="4" height="4"/><rect x="7" y="12" width="4" height="4"/><rect x="15" y="12" width="4" height="4"/></g><path d="M7 4h12v12H7z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Finish</button></div></footer>
 </section>
 <section id="screen-results" class="screen">
   <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
-  <main class="results-layout"><div class="result-celebration"><div class="trophy" aria-hidden="true"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 16h36v20a18 18 0 0 1-36 0z"/><path d="M32 20H20a10 10 0 0 0 10 14M68 20h12a10 10 0 0 1-10 14"/><path d="M50 54v14M36 74h28M30 84h40"/></svg></div><p class="eyebrow" id="results-kicker"></p><h1 id="results-winner"></h1><p id="results-sub"></p><div id="result-cards" class="result-cards"></div><div id="result-highlights" class="result-highlights"></div></div>
+  <main class="results-layout"><div class="result-celebration"><div class="trophy" aria-hidden="true"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 16h36v20a18 18 0 0 1-36 0z"/><path d="M32 20H20a10 10 0 0 0 10 14M68 20h12a10 10 0 0 1-10 14"/><path d="M50 54v14M36 74h28M30 84h40"/></svg></div><p class="eyebrow" id="results-kicker"></p><h1 id="results-winner"></h1><div id="result-cards" class="result-cards"></div><div id="result-highlights" class="result-highlights"></div></div>
     <div class="result-record"><div class="tabs" aria-label="Results view"><button class="tab is-active" data-tab="trip" aria-pressed="true">Trip</button><button class="tab" data-tab="all" aria-pressed="false">Overall</button><button class="tab" data-tab="log" aria-pressed="false">Log</button></div><ol class="leaderboard" id="leaderboard"></ol></div></main>
-  <footer class="results-actions"><button class="btn" id="btn-reopen">Reopen trip</button><button class="btn" id="btn-edit-players">Edit players</button><button class="btn" id="btn-swap">Swap cars & play</button><button class="btn btn-primary" id="btn-new-trip">Play again →</button></footer>
+  <footer class="results-actions"><button class="btn" id="btn-edit-players">Edit players</button><button class="btn btn-primary" id="btn-new-trip">Play again →</button></footer>
 </section>
 <div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><h2 id="modal-title"></h2><button class="btn" id="modal-close" aria-label="Close dialog">Close</button></div><div id="modal-content"></div></div></div>
 <div class="toast" id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button class="btn" id="toast-undo">Undo</button><button class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification">×</button></div>
-<script src="cars.js?v=12"></script><script src="game.js?v=12"></script><script src="app.js?v=12"></script>
+<script src="cars.js?v=13"></script><script src="game.js?v=13"></script><script src="app.js?v=13"></script>
 </body>
 </html>

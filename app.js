@@ -1,7 +1,20 @@
 /* Spotted: a dependency-free, device-local family road book. */
 const STORE_KEY = 'carspotter.v1'; // Keep the original key and migrate in place.
 const COLORS = ['#1c6e63', '#a13a2e', '#3f6b2e', '#5b4a9e', '#8a5a12', '#96355a'];
-const SOUNDS = [{ name: 'Warm bell', notes: [392, 523.25] }, { name: 'Bright chime', notes: [659.25, 880] }, { name: 'Marimba', notes: [523.25, 659.25] }, { name: 'Soft steps', notes: [440, 587.33] }, { name: 'Birdsong', notes: [587.33, 783.99] }, { name: 'Low bell', notes: [349.23, 440] }];
+// Each point sound is a tiny score: notes, the shape of the tone, and how
+// long each note rings. Distinct enough to tell apart from the back seat.
+const SOUNDS = [
+  { name: 'Warm bell', notes: [392, 523.25], type: 'triangle', hold: .16 },
+  { name: 'Bright chime', notes: [659.25, 880], type: 'triangle', hold: .16 },
+  { name: 'Marimba', notes: [523.25, 659.25], type: 'sine', hold: .12 },
+  { name: 'Coin', notes: [987.77, 1318.51], type: 'square', hold: .1, gap: 70, gain: .05 },
+  { name: 'Car horn', notes: [370, 311.13], type: 'sawtooth', hold: .26, gap: 0, gain: .045 },
+  { name: 'Boing', notes: [880, 220], type: 'sine', hold: .22, gap: 40, slide: true },
+  { name: 'Pop', notes: [660, 990], type: 'sine', hold: .07, gap: 55 },
+  { name: 'Whistle', notes: [523.25, 1046.5], type: 'sine', hold: .18, gap: 60, slide: true },
+  { name: 'Birdsong', notes: [587.33, 783.99], type: 'triangle', hold: .14 },
+  { name: 'Low bell', notes: [349.23, 440], type: 'triangle', hold: .2 },
+];
 const COLOR_NAMES = ['Teal', 'Terracotta', 'Green', 'Purple', 'Ochre', 'Berry'];
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -67,9 +80,8 @@ function openLibrary(playerId) {
   };
   $('#car-search').oninput = render; $('#car-filter').onchange = render; render();
 }
-function startTrip(swap = false) {
+function startTrip() {
   if (state.tripStart) return;
-  if (swap) Game.swap(state);
   Game.start(state, CARS);
   renderBoard(); showScreen('screen-game'); startTimer(); save();
 }
@@ -109,7 +121,14 @@ function updateGame() {
     const score = $(`[data-score="${p.id}"]`);
     if (score) score.textContent = p.tripPoints;
     const detail = $(`[data-detail="${p.id}"]`);
-    if (detail) detail.textContent = [p.trip !== p.tripPoints ? `${p.trip} ${p.trip === 1 ? 'car' : 'cars'}` : '', p.bests[p.car] ? `Best ${p.bests[p.car]}` : ''].filter(Boolean).join(' · ');
+    if (detail) {
+      const best = p.bests[p.car] || 0;
+      // A best only exists once a trip has been finished with that car, so
+      // early on some players have one and others do not; say so plainly.
+      const beating = p.carSpots > best && p.carSpots > 0;
+      detail.innerHTML = beating ? '<span class="best-flag">★ Best ever!</span>'
+        : escapeHtml([p.trip !== p.tripPoints ? `${p.trip} ${p.trip === 1 ? 'car' : 'cars'}` : '', best ? `Best ${best}` : ''].filter(Boolean).join(' · '));
+    }
     const minus = $(`[data-minus="${p.id}"]`); if (minus) minus.disabled = !p.trip;
   });
   const lead = leadText();
@@ -141,17 +160,13 @@ function showResults(celebrate = false, archive = false) {
   const winners = t ? t.scores.filter(p => t.winnerIds.includes(p.id)) : [];
   $('#results-kicker').textContent = archive ? 'The family record' : `Trip ${t?.number || state.tripNumber} · ${fmtDuration(t?.duration || 0)}`;
   $('#results-winner').textContent = archive ? 'Our road book' : winners.length > 1 ? 'It’s a tie!' : winners.length ? `${winners[0].name} wins!` : 'A quiet trip';
-  const scores = t ? [...t.scores].sort((a, b) => b.score - a.score) : [];
-  $('#results-sub').textContent = archive ? `${state.journeys.length} trips and counting` : scores.length ? `${scores.map(s => s.score).join(' – ')} points${winners.length ? ' · well spotted!' : ' · another adventure awaits'}` : 'Your next adventure starts here.';
   $('#result-cards').innerHTML = !archive && t ? t.scores.map(s => `<div class="result-card" style="--c:${s.color}">${carMark(s.car)}<b>${escapeHtml(s.name)}</b><strong>${s.score}</strong>${s.spots != null && s.spots !== s.score ? `<small>${s.spots} ${s.spots === 1 ? 'car' : 'cars'} spotted</small>` : ''}</div>`).join('') : '';
-  $('#result-highlights').innerHTML = !archive && t ? (t.highlights || []).filter(h => !h.first).map(h => `<div class="record-note"><span class="eyebrow">Personal best</span><span><b>${escapeHtml(h.name)}</b> · ${carLabel(h.car)}</span><strong>${h.count}</strong></div>`).join('') : '';
-  $('#btn-reopen').hidden = archive || !Game.canReopen(state);
-  $('#btn-swap').hidden = state.players.length < 2;
+  $('#result-highlights').innerHTML = !archive && t ? (t.highlights || []).filter(h => h.count > 0).map(h => `<div class="record-note"><span class="eyebrow">${h.first ? '★ First record' : '★ Personal best'}</span><span><b>${escapeHtml(h.name)}</b> · ${carLabel(h.car)}</span><strong>${h.count}</strong></div>`).join('') : '';
   $('#btn-new-trip').textContent = archive ? 'Begin trip →' : 'Play again →';
   $('[data-tab="trip"]').hidden = !t;
   $('#screen-results').classList.toggle('archive-view', archive);
   setTab(archive ? 'all' : 'trip'); showScreen('screen-results');
-  if (celebrate && winners.length) runConfetti();
+  if (celebrate && winners.length) { runConfetti(); fanfare(); }
 }
 function setTab(which) {
   currentTab = which;
@@ -185,21 +200,31 @@ function soundLabel() {
   button.setAttribute('aria-label', state.sound ? 'Mute sound' : 'Enable sound');
   button.title = state.sound ? 'Mute sound' : 'Enable sound';
 }
-// Distinct, gentle two-note signatures follow the player, not their car.
+// A sound signature follows the player, not their car.
 function playerSound(id, preview = false) {
   const p = findPlayer(id);
-  const index = Math.max(0, state.players.findIndex(p => p.id === id));
-  const notes = SOUNDS[p?.sound ?? index % SOUNDS.length].notes;
-  blip(notes[0], preview);
-  setTimeout(() => blip(notes[1], preview), 95);
+  const index = Math.max(0, state.players.findIndex(q => q.id === id));
+  const sound = SOUNDS[p?.sound ?? index % SOUNDS.length];
+  if (sound.slide) { tone(sound.notes[0], { ...sound, to: sound.notes[1], hold: sound.hold }, preview); return; }
+  tone(sound.notes[0], sound, preview);
+  setTimeout(() => tone(sound.notes[1], sound, preview), sound.gap ?? 95);
 }
-function blip(freq, preview = false) {
+function blip(freq, preview = false) { tone(freq, { type: 'triangle', hold: .16 }, preview); }
+function tone(freq, spec = {}, preview = false) {
   if (!state.sound && !preview) return;
   try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(); osc.type = 'triangle'; osc.frequency.value = freq;
-    gain.gain.setValueAtTime(.001, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(.07, audioCtx.currentTime + .01); gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .14);
-    osc.connect(gain).connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + .16);
+    const t = audioCtx.currentTime, hold = spec.hold ?? .16, peak = spec.gain ?? .07;
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = spec.type || 'triangle'; osc.frequency.setValueAtTime(freq, t);
+    if (spec.to) osc.frequency.exponentialRampToValueAtTime(spec.to, t + hold);
+    gain.gain.setValueAtTime(.001, t); gain.gain.exponentialRampToValueAtTime(peak, t + .012); gain.gain.exponentialRampToValueAtTime(.001, t + hold);
+    osc.connect(gain).connect(audioCtx.destination); osc.start(t); osc.stop(t + hold + .02);
   } catch { /* Sound must never block scoring. */ }
+}
+// The finish line: a short rising fanfare under the confetti.
+function fanfare() {
+  [523.25, 659.25, 783.99, 1046.5].forEach((note, i) =>
+    setTimeout(() => tone(note, { type: 'triangle', hold: i === 3 ? .5 : .18, gain: .06 }), i * 130));
 }
 async function requestWakeLock() { try { if ('wakeLock' in navigator && !wakeLock) { const lock = await navigator.wakeLock.request('screen'); if (!state.tripStart) { lock.release(); return; } wakeLock = lock; lock.addEventListener('release', () => { wakeLock = null; }); } } catch {} }
 function releaseWakeLock() { if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; } }
@@ -235,9 +260,7 @@ $('#btn-add-player').onclick = () => { if (state.players.length >= 6) return; st
 $('#btn-start').onclick = () => startTrip();
 $('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
 $('#btn-new-trip').onclick = () => startTrip();
-$('#btn-swap').onclick = () => startTrip(true);
 $('#btn-edit-players').onclick = () => { $('#setup-editor').hidden = false; $('#btn-edit-setup').textContent = 'Done editing'; renderEditor(); showScreen('screen-setup'); };
-$('#btn-reopen').onclick = () => { if (Game.reopen(state)) { Game.simplify(state); renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Trip reopened. You can undo the last sighting.'); } };
 $('#btn-view-alltime').onclick = () => showResults(false, true);
 $('#btn-end').onclick = endTrip;
 $('#btn-sound').onclick = () => { state.sound = !state.sound; save(); soundLabel(); if (state.sound) blip(660); };
@@ -247,10 +270,10 @@ $('#modal').onclick = e => { if (e.target === $('#modal')) closeModal(); };
 $('#toast-undo').onclick = () => { const action = toastAction; dismissToast(); if (action) action(); };
 $('#toast-dismiss').onclick = dismissToast;
 $$('.tab').forEach(el => el.onclick = () => setTab(el.dataset.tab));
-$('#btn-reset-all').onclick = () => confirmDialog('Reset the whole archive?', 'Every score, win, personal best and recorded trip will be erased. Your players and chosen cars stay.', () => {
+$('#btn-reset-all').onclick = () => confirmDialog('Reset every score?', 'Every score, win, personal best and recorded trip will be erased. Your players and chosen cars stay.', () => {
   state.players.forEach(p => { p.trip = p.total = p.wins = p.points = p.tripPoints = p.carSpots = 0; p.bests = {}; });
   state.tripNumber = 1; state.tripStart = null; state.lastTrip = null; state.journeys = []; state.events = []; state.tripRules = null; save(); renderEditor();
-}, 'Reset archive');
+}, 'Reset scores');
 document.addEventListener('keydown', e => {
   if ($('#modal').hidden) return;
   if (e.key === 'Escape') { e.preventDefault(); closeModal(); }

@@ -15,6 +15,10 @@ h1,h2,h3{font-family:var(--serif);line-height:1.15}
 h2{font-size:30px}
 small{font-size:13px}
 button{user-select:none}
+/* Nothing here is text to copy: a long press should never start a
+   selection mid-game. Inputs keep it, so a name can still be edited. */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,select,textarea{-webkit-user-select:text;user-select:text}
 img{max-width:100%}
 [hidden]{display:none!important}
 .screen{display:none;min-height:100vh;min-height:100dvh}
@@ -307,6 +311,8 @@ progress::-moz-progress-bar{background:var(--green)}
 .logo-toggle{padding:0;border:0;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-align:left;min-height:44px}
 .gamebar-left .mini-logo{display:block}
 .sound-toggle{width:48px;padding:11px;border:0;background:none}
+.btn-end{display:inline-flex;align-items:center;gap:8px}
+.flag{width:18px;height:18px;flex:none}
 .sound-toggle svg{display:block;width:24px;height:24px}
 .btn{border-radius:2px;background:transparent}
 .btn-primary{background:var(--ink)}
@@ -401,6 +407,7 @@ progress::-moz-progress-bar{background:var(--green)}
   .trip-timer{font-size:22px}
   .gamebar .eyebrow{font-size:11px}
 }
+.best-flag{color:var(--green);font-weight:700}
 .record-note{display:grid;grid-template-columns:1fr auto;gap:3px 16px;text-align:left;padding:12px 0;border-top:1px solid var(--line);font:16px var(--serif)}
 .record-note .eyebrow{grid-column:1;font-size:10px}
 .record-note>span:not(.eyebrow){grid-column:1;color:var(--muted)}
