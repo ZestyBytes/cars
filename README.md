@@ -70,3 +70,22 @@ accounting remains in the model for compatibility with saved records.
 Optional browser checks: start the local server and run `node tests/browser-check.cjs` with Playwright and its Chromium/WebKit browsers installed. These cover two and three players at portrait, landscape and Tesla-sized viewports, sound settings, scoring/correction and result tabs.
 
 Pushing main publishes to GitHub Pages via the existing workflow.
+
+## Player photos and voice scoring
+
+In Edit players, choose Add photo to take a camera picture (parked in a Tesla)
+or choose an existing image. Preview and save the square avatar, or remove it.
+Photos are resized to 192px JPEGs and stored only in this browser with the game.
+The camera is released on capture or closing the dialog.
+
+During a trip, tap Voice and enable the microphone to try experimental speech
+scoring. Say one selected brand, or a player name followed by their brand when
+players share a brand. Rapid repeated claims are ignored for 1.8 seconds; use
+−1 to correct mistakes. Voice stops on finishing or hiding the page and must
+be enabled again. The browser may use an online speech provider; Spotted stores
+no audio. Microphone support does not guarantee speech recognition support in
+Tesla: an on-screen message reports unsupported browsers or recognition errors.
+
+`node tests/media-browser.cjs` uses Edge with a simulated camera and recogniser
+to check photo capture/persistence and voice scoring. Actual Tesla hardware,
+permissions and speech service availability require in-car testing.

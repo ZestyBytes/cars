@@ -447,3 +447,5 @@ progress::-moz-progress-bar{background:var(--green)}
 .point-celebration{z-index:1}
 .panel-art .car-plate.brand-logo{inset:12%;width:76%;height:76%;z-index:2}
 .panel-name,.panel-model,.score-line,.spot-label,.panel-bottom{position:relative;z-index:2}
+
+.avatar{width:42px!important;height:42px!important;flex-shrink:0;object-fit:cover!important;border-radius:50%;border:2px solid var(--line);vertical-align:middle}.avatar-editor{display:flex;align-items:center;gap:12px}.ready-players b{display:flex;align-items:center;gap:8px}.panel-name{gap:10px}.photo-preview video,.photo-preview img{display:block;width:100%;max-height:320px;object-fit:contain;margin:16px auto}.photo-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}.photo-actions input{display:block;max-width:210px;font-size:12px}.voice-status{padding:4px 22px;color:var(--muted);font-size:13px;flex-shrink:0;min-height:28px}#btn-voice[aria-pressed=true]{background:var(--green);color:var(--paper)}
