@@ -6,12 +6,12 @@ function startBingo() {
   for (let i = pool.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
   state.lastTrip = null; state.events = [];
   state.bingo = { keys: pool.slice(0,9), found: [] }; state.tripStart = Date.now(); state.brandCounts ||= {};
-  Voice.stop(); renderBoard(); showScreen('screen-game'); startTimer(); save();
+  renderBoard(); showScreen('screen-game'); startTimer(); save();
 }
 function renderBingo() {
   $('.play').classList.add('bingo-play'); $('#board').classList.add('bingo-board');
-  $('#btn-voice').hidden = true; $('#btn-game-standings').hidden = true;
-  $('#voice-status').textContent = 'Team bingo · tap a brand once when spotted. Tap a marked tile to undo.';
+  $('#bingo-instructions').hidden = false; $('#btn-game-standings').hidden = true;
+  $('#bingo-instructions').textContent = 'Team bingo · tap a brand once when spotted. Tap a marked tile to undo.';
   $('#trip-number').textContent = state.tripNumber;
   $('#board').innerHTML = state.bingo.keys.map(key => `<button class="bingo-tile" data-bingo="${key}" aria-pressed="${state.bingo.found.includes(key)}">${carMark(key)}<strong>${carLabel(key)}</strong><span>${state.bingo.found.includes(key) ? '✓ Spotted' : 'Spot me'}</span></button>`).join('');
   $('#live-leader').textContent = `${state.bingo.found.length}/9 found · ${bingoLines()} lines`;

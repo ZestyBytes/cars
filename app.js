@@ -88,7 +88,7 @@ function renderBoard() {
   if (state.bingo && state.tripStart) { renderBingo(); return; }
   document.querySelector('.play').classList.remove('bingo-play');
   $('#board').classList.remove('bingo-board');
-  $('#btn-voice').hidden = false;
+  $('#bingo-instructions').hidden = true;
   $('#btn-game-standings').hidden = false;
   $('#board').dataset.count = state.players.length;
   $('#board').innerHTML = state.players.map(p => `<article class="panel" style="--c:${p.color}" data-panel="${p.id}">
@@ -301,7 +301,7 @@ $('#btn-edit-players').onclick = () => startTrip();
 $('#btn-reopen').onclick = () => { if (Game.reopen(state)) { Game.simplify(state); renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Trip reopened. You can undo the last sighting.'); } };
 $('#btn-view-alltime').onclick = () => showResults(false, true);
 $('#btn-end').onclick = endTrip;
-$('#btn-voice').onclick = Voice.toggle;
+
 $('#btn-sound').onclick = () => { state.sound = !state.sound; save(); soundLabel(); if (state.sound) blip(660); };
 $('#btn-game-standings').onclick = openGameLeaderboard;
 $('#modal-close').onclick = closeModal;

@@ -71,32 +71,18 @@ Optional browser checks: start the local server and run `node tests/browser-chec
 
 Pushing main publishes to GitHub Pages via the existing workflow.
 
-## Player photos and voice scoring
+## Player photos
 
-In Edit players, choose Add photo to take a camera picture (parked in a Tesla)
-or choose an existing image. Preview and save the square avatar, or remove it.
-Photos are resized to 192px JPEGs and stored only in this browser with the game.
-The camera is released on capture or closing the dialog.
-
-During a trip, tap Voice and enable the microphone to try experimental speech
-scoring. Say one selected brand, or a player name followed by their brand when
-players share a brand. Rapid repeated claims are ignored for 1.8 seconds; use
-−1 to correct mistakes. Voice stops on finishing or hiding the page and must
-be enabled again. The browser may use an online speech provider; Spotted stores
-no audio. Microphone support does not guarantee speech recognition support in
-Tesla: an on-screen message reports unsupported browsers or recognition errors.
-
-`node tests/media-browser.cjs` uses Edge with a simulated camera and recogniser
-to check photo capture/persistence and voice scoring. Actual Tesla hardware,
-permissions and speech service availability require in-car testing.
+Choose an existing photo in Edit players. Avatars are resized and saved only in
+this browser. Camera capture and voice scoring were removed after in-car testing
+returned permission errors. Existing avatars and scores are preserved.
 
 ## Brand bingo and Collection
 
 Choose Classic or Brand bingo before starting. Bingo is a shared nine-brand
 board drawn from everyday makes. Tap a tile to mark it; tap again to confirm
 an undo. Rows, columns and diagonals count as lines. Finish saves the team result;
-bingo does not change individual player scores or wins. Voice scoring is currently
-available in Classic only. An unfinished board survives reloading.
+bingo does not change individual player scores or wins. An unfinished board survives reloading.
 
 Collection shows combined Classic and bingo brand counts, with search and faded
 unspotted brands, plus recent team bingo results. Existing saved journey details
