@@ -127,12 +127,55 @@ function score(id) {
   const number = $(`[data-score="${id}"]`);
   if (number) { number.classList.remove('score-bump'); void number.offsetWidth; number.classList.add('score-bump'); }
   const panel = $(`[data-panel="${id}"]`);
-  if (panel) { panel.classList.remove('is-hit'); void panel.offsetWidth; panel.classList.add('is-hit'); }
+  if (panel) celebratePoint(panel);
   playerSound(id);
+}
+function clearPointCelebration(panel) {
+  if (!panel) return;
+  clearTimeout(panel.celebrationTimer);
+  panel.querySelector('.point-celebration')?.remove();
+  panel.classList.remove('is-hit');
+}
+function celebratePoint(panel) {
+  clearPointCelebration(panel);
+  const layer = document.createElement('span');
+  layer.className = 'point-celebration';
+  layer.setAttribute('aria-hidden', 'true');
+  const bounds = panel.getBoundingClientRect();
+  const scoreBounds = panel.querySelector('.panel-score').getBoundingClientRect();
+  const artBounds = panel.querySelector('.brand-logo').getBoundingClientRect();
+  const originX = artBounds.left - bounds.left + artBounds.width / 2;
+  const originY = artBounds.top - bounds.top + artBounds.height / 2;
+  layer.style.setProperty('--badge-x', (scoreBounds.left - bounds.left + scoreBounds.width / 2) + 'px');
+  layer.style.setProperty('--badge-y', Math.max(28, scoreBounds.top - bounds.top - 26) + 'px');
+  layer.style.setProperty('--origin-x', originX + 'px');
+  layer.style.setProperty('--origin-y', originY + 'px');
+  const badge = document.createElement('span');
+  badge.className = 'point-pop';
+  badge.textContent = '+1';
+  layer.append(badge);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const colours = ['#efb52e', '#e75c55', '#36ad9d', '#698bef', '#c975be'];
+    for (let i = 0; i < 26; i++) {
+      const piece = document.createElement('i');
+      piece.className = 'point-confetti';
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 1.15 + Math.random() * .65;
+      const x = Math.cos(angle) * (artBounds.width / 2 + 45) * distance;
+      const y = Math.sin(angle) * (artBounds.height / 2 + 35) * distance;
+      piece.style.cssText = '--x:' + x + 'px;--y:' + y + 'px;--fall:' + (y + 65 + Math.random() * 55) + 'px;--turn:' + (Math.random() * 720 - 360) + 'deg;--duration:' + (850 + Math.random() * 350) + 'ms;background:' + colours[Math.floor(Math.random() * colours.length)] + ';width:' + (6 + Math.random() * 5) + 'px;height:' + (8 + Math.random() * 8) + 'px;border-radius:' + (Math.random() > .65 ? '50%' : '2px');
+      layer.append(piece);
+    }
+  }
+  panel.append(layer);
+  void panel.offsetWidth;
+  panel.classList.add('is-hit');
+  panel.celebrationTimer = setTimeout(() => clearPointCelebration(panel), 1300);
 }
 function unscore(id, eventId) {
   const event = Game.remove(state, id, eventId);
   if (!event) return;
+  clearPointCelebration($(`[data-panel="${id}"]`));
   save(); updateGame(); blip(240);
 }
 function startTimer() { clearInterval(timerId); const tick = () => { $('#trip-timer').textContent = fmtDuration(Date.now() - state.tripStart); }; tick(); timerId = setInterval(tick, 1000); }
