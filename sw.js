@@ -1,8 +1,8 @@
 /* Versioned, atomic offline shell. All brand logos are available offline.
    Never substitute HTML for a failed image or cache unrelated origins. */
-const CACHE = 'spotted-v17';
+const CACHE = 'spotted-v18';
 const ASSETS = [
-  './', './index.html', './styles.css?v=17', './cars.js?v=17', './game.js?v=17', './app.js?v=17', './media.js?v=17',
+  './', './index.html', './styles.css?v=18', './cars.js?v=18', './game.js?v=18', './app.js?v=18', './media.js?v=18', './bingo.js?v=18',
   './manifest.json', './icon.svg',
   './assets/brands/abarth.png',
   './assets/brands/alfa-romeo.png',

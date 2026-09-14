@@ -32,6 +32,7 @@ function showScreen(id) {
   window.scrollTo(0, 0);
 }
 function renderEditor() {
+  $$('[data-style]').forEach(el => el.setAttribute('aria-pressed', (state.gameStyle || 'classic') === el.dataset.style));
   $('.edition').textContent = `Brand spotting · ${CAR_ORDER.length} brands`;
   $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
     <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
@@ -71,11 +72,17 @@ function openLibrary(playerId) {
 }
 function startTrip(swap = false) {
   if (state.tripStart) return;
+  if (state.gameStyle === 'bingo') { startBingo(); return; }
   if (swap) Game.swap(state);
   Game.start(state, CARS);
   renderBoard(); showScreen('screen-game'); startTimer(); save();
 }
 function renderBoard() {
+  if (state.bingo && state.tripStart) { renderBingo(); return; }
+  document.querySelector('.play').classList.remove('bingo-play');
+  $('#board').classList.remove('bingo-board');
+  $('#btn-voice').hidden = false;
+  $('#btn-game-standings').hidden = false;
   $('#board').dataset.count = state.players.length;
   $('#board').innerHTML = state.players.map(p => `<article class="panel" style="--c:${p.color}" data-panel="${p.id}">
     <button class="spot-button" data-spot="${p.id}" aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
@@ -180,7 +187,7 @@ function unscore(id, eventId) {
   save(); updateGame(); blip(240);
 }
 function startTimer() { clearInterval(timerId); const tick = () => { $('#trip-timer').textContent = fmtDuration(Date.now() - state.tripStart); }; tick(); timerId = setInterval(tick, 1000); }
-function endTrip() { if (!state.tripStart) return; clearInterval(timerId); Game.finish(state); showResults(true); save(); }
+function endTrip() { if (!state.tripStart) return; if (state.bingo) { finishBingo(); return; } clearInterval(timerId); Game.finish(state); showResults(true); save(); }
 function showResults(celebrate = false, archive = false) {
   const t = state.lastTrip;
   const winners = t ? t.scores.filter(p => t.winnerIds.includes(p.id)) : [];
@@ -277,6 +284,8 @@ function runConfetti() {
 }
 $$('[data-theme-toggle]').forEach(el => el.onclick = toggleTheme);
 $('#btn-add-player').onclick = () => { if (state.players.length >= 6) return; state.players.push(Game.player('', 'ford', COLORS[state.players.length % COLORS.length])); save(); renderEditor(); const input = $$('[data-name]').at(-1); input.focus(); input.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+$$('[data-style]').forEach(el => el.onclick = () => { state.gameStyle = el.dataset.style; save(); renderEditor(); });
+$('#btn-collection').onclick = openCollection;
 $('#btn-start').onclick = () => startTrip();
 $('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
 $('#btn-new-trip').onclick = () => startTrip();
@@ -295,6 +304,7 @@ $('#toast-dismiss').onclick = dismissToast;
 $$('.tab').forEach(el => el.onclick = () => setTab(el.dataset.tab));
 $('#btn-reset-all').onclick = () => confirmDialog('Reset the whole archive?', 'Every score, win, personal best and recorded trip will be erased. Your players and chosen brands stay.', () => {
   state.players.forEach(p => { p.trip = p.total = p.wins = p.points = p.tripPoints = p.carSpots = 0; p.bests = {}; });
+  state.brandCounts = {}; state.bingoHistory = []; state.bingo = null;
   state.tripNumber = 1; state.tripStart = null; state.lastTrip = null; state.journeys = []; state.events = []; state.tripRules = null; save(); renderEditor();
 }, 'Reset archive');
 document.addEventListener('keydown', e => {

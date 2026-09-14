@@ -46,6 +46,18 @@ const Game = (() => {
         if (p) p.bests[score.car] = Math.max(p.bests[score.car] || 0, number(score.score));
       }
     }
+    if (!s.brandCounts) {
+      s.brandCounts = {};
+      const count = (key, n) => { if (cars[key]) s.brandCounts[key] = (s.brandCounts[key] || 0) + number(n); };
+      for (const trip of s.journeys) {
+        if (trip.events?.length) trip.events.forEach(e => count(e.car, 1));
+        else for (const sc of trip.scores || []) count(sc.car, sc.carSpots ?? sc.spots ?? (trip.rules?.mode === 'rarity' ? 0 : sc.score));
+      }
+      if (s.tripStart) {
+        if (s.events.length) s.events.forEach(e => count(e.car, 1));
+        else s.players.forEach(p => count(p.car, p.carSpots));
+      }
+    }
     s.version = 2;
     if (s.tripStart && !s.tripRules) s.tripRules = { ...settings(), bonusCar: null, values: {} };
     return s;
@@ -76,6 +88,7 @@ const Game = (() => {
     const event = { id: uid(), playerId: id, car, points, bonus, at: now };
     p.trip++; p.total++; p.tripPoints += points; p.points += points;
     if (!bonus) p.carSpots++;
+    s.brandCounts ||= {}; s.brandCounts[car] = (s.brandCounts[car] || 0) + 1;
     s.events.push(event);
     return event;
   }
@@ -90,6 +103,7 @@ const Game = (() => {
     if (eventId && index < 0) return null;
     // v1 active journeys have no event log; those sightings were one point each.
     const event = index >= 0 ? s.events.splice(index, 1)[0] : { playerId: id, points: 1, bonus: false, car: p.car };
+    if (s.brandCounts) s.brandCounts[event.car] = Math.max(0, (s.brandCounts[event.car] || 0) - 1);
     p.trip--; p.total = Math.max(0, p.total - 1);
     p.tripPoints = Math.max(0, p.tripPoints - event.points); p.points = Math.max(0, p.points - event.points);
     if (!event.bonus) p.carSpots = Math.max(0, p.carSpots - 1);

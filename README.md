@@ -89,3 +89,16 @@ Tesla: an on-screen message reports unsupported browsers or recognition errors.
 `node tests/media-browser.cjs` uses Edge with a simulated camera and recogniser
 to check photo capture/persistence and voice scoring. Actual Tesla hardware,
 permissions and speech service availability require in-car testing.
+
+## Brand bingo and Collection
+
+Choose Classic or Brand bingo before starting. Bingo is a shared nine-brand
+board drawn from everyday makes. Tap a tile to mark it; tap again to confirm
+an undo. Rows, columns and diagonals count as lines. Finish saves the team result;
+bingo does not change individual player scores or wins. Voice scoring is currently
+available in Classic only. An unfinished board survives reloading.
+
+Collection shows combined Classic and bingo brand counts, with search and faded
+unspotted brands, plus recent team bingo results. Existing saved journey details
+are imported once where available. Older missing history cannot be reconstructed.
+Counts remain after old trips leave the archive; Reset archive clears them.

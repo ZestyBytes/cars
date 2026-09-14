@@ -84,7 +84,7 @@ test('all catalog logos exist and all local shell requests are in offline cache'
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
   for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 100); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=17)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=18)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];
@@ -130,4 +130,12 @@ test('legacy model selections and recovery data migrate to brands without losing
   assert.equal(loaded.players[0].points, 0);
   assert.equal(loaded.players[0].bests.tesla, 5);
   assert.deepEqual(Game.migrate(loaded, catalog), loaded);
+});
+
+test('collection migration counts archived and active sightings once, then tracks undo', () => {
+  const raw = { version: 2, players: [{id:'p',name:'Player',car:'fiesta',trip:1,total:5}], tripStart:1000, events:[{id:'e',playerId:'p',car:'fiesta',points:1}], journeys:[{scores:[{car:'fiesta',carSpots:4,score:4}]}] };
+  const s = Game.migrate(raw,catalog);
+  assert.equal(s.brandCounts.ford,5);
+  assert.equal(Game.migrate(s,catalog).brandCounts.ford,5);
+  Game.remove(s,'p'); assert.equal(s.brandCounts.ford,4);
 });
