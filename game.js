@@ -8,20 +8,35 @@ const Game = (() => {
   function fresh() {
     return { version: 2, sound: true, theme: 'light', tripNumber: 1, tripStart: null,
       journeys: [], lastTrip: null, events: [], settings: settings(), tripRules: null,
-      players: [player('Dad', 'model-y', '#1c6e63'), player('Molly', 'jazz', '#a13a2e')] };
+      players: [player('Dad', 'tesla', '#1c6e63'), player('Molly', 'honda', '#a13a2e')] };
   }
   function player(name, car, color) {
     return { id: uid(), name, car, color, trip: 0, total: 0, wins: 0, points: 0, tripPoints: 0, carSpots: 0, bests: {} };
   }
   function migrate(raw, cars) {
     if (!raw || !Array.isArray(raw.players) || !raw.players.length) return fresh();
+    // Translate old model targets throughout recovery data as well as the roster.
+    // Colliding model bests use the maximum, never an invented combined record.
+    const aliases = { 'model-y': 'tesla', 'model-3': 'tesla', jazz: 'honda', fiesta: 'ford', corsa: 'vauxhall', golf: 'volkswagen', qashqai: 'nissan', sportage: 'kia', '500': 'fiat' };
+    const convert = value => {
+      if (Array.isArray(value)) return value.map(convert);
+      if (!value || typeof value !== 'object') return value;
+      const result = {};
+      for (const [key, item] of Object.entries(value)) {
+        const mapped = aliases[key] || key;
+        const next = (key === 'car' || key === 'bonusCar') ? aliases[item] || item : convert(item);
+        result[mapped] = typeof next === 'number' && typeof result[mapped] === 'number' ? Math.max(result[mapped], next) : next;
+      }
+      return result;
+    };
+    raw = convert(raw);
     const s = Object.assign(fresh(), raw);
     s.settings = Object.assign(settings(), raw.settings || {});
     s.settings.values = s.settings.values || {};
     s.journeys = Array.isArray(raw.journeys) ? raw.journeys : [];
     s.events = Array.isArray(raw.events) ? raw.events : [];
     s.players = raw.players.map(p => ({ ...p, id: p.id || uid(), name: String(p.name || ''),
-      car: cars[p.car] ? p.car : 'model-y', color: /^#[\da-f]{6}$/i.test(p.color) ? p.color : '#1c6e63',
+      car: cars[p.car] ? p.car : 'tesla', color: /^#[\da-f]{6}$/i.test(p.color) ? p.color : '#1c6e63',
       trip: number(p.trip), total: number(p.total), wins: number(p.wins),
       points: number(p.points ?? p.total), tripPoints: number(p.tripPoints ?? p.trip),
       carSpots: number(p.carSpots ?? p.trip), bests: p.bests || {} }));

@@ -32,9 +32,10 @@ function showScreen(id) {
   window.scrollTo(0, 0);
 }
 function renderEditor() {
+  $('.edition').textContent = `Brand spotting · ${CAR_ORDER.length} brands`;
   $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
     <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
-    <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Choose car for ${escapeHtml(p.name || 'player')}">${carMark(p.car)}<span>Change car ↗</span></button>
+    <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Choose brand for ${escapeHtml(p.name || 'player')}">${carMark(p.car)}<span>Change brand ↗</span></button>
       <div class="pcard-fields"><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
       <div><p class="eyebrow">Looking for</p><h3 class="selected-car-name">${carLabel(p.car)}</h3></div>
       <div class="swatches" aria-label="Player colour">${COLORS.map((c, i) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}" aria-pressed="${c === p.color}" aria-label="${COLOR_NAMES[i]}"></button>`).join('')}</div>
@@ -55,17 +56,17 @@ function renderEditor() {
 }
 function openLibrary(playerId) {
   const p = findPlayer(playerId);
-  openModal(`A car for ${p.name || 'your spotter'}`, `
-    <div class="library-tools"><input class="field" id="car-search" type="search" placeholder="Find a car…" aria-label="Search car library"><select id="car-filter" aria-label="Filter cars"><option value="">All cars</option><option>Small car</option><option>Hatchback</option><option>SUV</option><option>Saloon</option></select></div>
+  openModal(`A brand for ${p.name || 'your spotter'}`, `
+    <div class="library-tools"><input class="field" id="car-search" type="search" placeholder="Find a brand…" aria-label="Search car brands"></div>
     <div class="library-grid" id="library-grid"></div>`, 'library');
   const render = () => {
     const query = $('#car-search').value.toLowerCase().trim();
-    const type = $('#car-filter').value;
-    const keys = CAR_ORDER.filter(key => CARS[key].label.toLowerCase().includes(query) && (!type || CARS[key].type === type));
-    $('#library-grid').innerHTML = keys.length ? keys.map(key => `<button class="library-option" data-library-car="${key}" aria-pressed="${p.car === key}">${carMark(key)}<b>${carLabel(key)}</b><small>${CARS[key].type}</small></button>`).join('') : '<p class="hint">No matches. Try a make, like Ford or Tesla.</p>';
+
+    const keys = CAR_ORDER.filter(key => CARS[key].label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(query.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+    $('#library-grid').innerHTML = keys.length ? keys.map(key => `<button class="library-option" data-library-car="${key}" aria-pressed="${p.car === key}">${carMark(key)}<b>${carLabel(key)}</b><small>Any model · +1 point</small></button>`).join('') : '<p class="hint">No matches. Try a make, like Ford or Tesla.</p>';
     $$('[data-library-car]').forEach(el => el.onclick = () => { p.car = el.dataset.libraryCar; save(); renderEditor(); modalReturnFocus = $(`[data-pick="${p.id}"]`); closeModal(); });
   };
-  $('#car-search').oninput = render; $('#car-filter').onchange = render; render();
+  $('#car-search').oninput = render; render();
 }
 function startTrip(swap = false) {
   if (state.tripStart) return;
@@ -247,7 +248,7 @@ $('#modal').onclick = e => { if (e.target === $('#modal')) closeModal(); };
 $('#toast-undo').onclick = () => { const action = toastAction; dismissToast(); if (action) action(); };
 $('#toast-dismiss').onclick = dismissToast;
 $$('.tab').forEach(el => el.onclick = () => setTab(el.dataset.tab));
-$('#btn-reset-all').onclick = () => confirmDialog('Reset the whole archive?', 'Every score, win, personal best and recorded trip will be erased. Your players and chosen cars stay.', () => {
+$('#btn-reset-all').onclick = () => confirmDialog('Reset the whole archive?', 'Every score, win, personal best and recorded trip will be erased. Your players and chosen brands stay.', () => {
   state.players.forEach(p => { p.trip = p.total = p.wins = p.points = p.tripPoints = p.carSpots = 0; p.bests = {}; });
   state.tripNumber = 1; state.tripStart = null; state.lastTrip = null; state.journeys = []; state.events = []; state.tripRules = null; save(); renderEditor();
 }, 'Reset archive');

@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#eef0e7">
-<meta name="description" content="Spotted — your family car-spotting road book. Pick a car, collect sightings and make every trip a game.">
+<meta name="description" content="Spotted — your family car-spotting road book. Pick a brand, collect sightings and make every trip a game.">
 <title>Spotted · Road Book</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css?v=12">
+<link rel="stylesheet" href="styles.css?v=13">
 </head>
 <body>
 <section id="screen-setup" class="screen is-active">
@@ -18,7 +18,8 @@
     <div class="topbar-actions"><button class="btn" id="btn-view-alltime">Leaderboard</button></div>
   </header>
   <main class="setup-scroll">
-    <div class="section-heading"><div><p class="eyebrow">The next trip</p><h2>Ready for a trip?</h2></div><span class="edition">England collection · 10 cars</span></div>
+    <div class="section-heading"><div><p class="eyebrow">The next trip</p><h2>Ready for a trip?</h2></div><span class="edition">Brand spotting · 50 brands</span></div>
+    <p class="hint brand-rules">Choose a brand. Spot any of its cars — any model, colour or age. Each sighting earns one point.</p>
     <div id="ready-players" class="ready-players"></div><button class="btn" id="btn-edit-setup">Edit players</button><div id="setup-editor" hidden><div id="player-editor" class="player-editor"></div>
     <button class="btn btn-add" id="btn-add-player">+ Add player</button></div>
 
@@ -37,10 +38,10 @@
 
   <main class="results-layout"><div class="result-celebration"><div class="trophy" aria-hidden="true"><svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 16h36v20a18 18 0 0 1-36 0z"/><path d="M32 20H20a10 10 0 0 0 10 14M68 20h12a10 10 0 0 1-10 14"/><path d="M50 54v14M36 74h28M30 84h40"/></svg></div><p class="eyebrow" id="results-kicker"></p><h1 id="results-winner"></h1><p id="results-sub"></p><div id="result-cards" class="result-cards"></div><div id="result-highlights" class="result-highlights"></div></div>
     <div class="result-record"><div class="tabs" aria-label="Results view"><button class="tab is-active" data-tab="trip" aria-pressed="true">Trip</button><button class="tab" data-tab="all" aria-pressed="false">Overall</button><button class="tab" data-tab="log" aria-pressed="false">Log</button></div><ol class="leaderboard" id="leaderboard"></ol></div></main>
-  <footer class="results-actions"><button class="btn" id="btn-reopen">Reopen trip</button><button class="btn" id="btn-edit-players">Edit players</button><button class="btn" id="btn-swap">Swap cars & play</button><button class="btn btn-primary" id="btn-new-trip">Play again →</button></footer>
+  <footer class="results-actions"><button class="btn" id="btn-reopen">Reopen trip</button><button class="btn" id="btn-edit-players">Edit players</button><button class="btn" id="btn-swap">Swap brands & play</button><button class="btn btn-primary" id="btn-new-trip">Play again →</button></footer>
 </section>
 <div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><h2 id="modal-title"></h2><button class="btn" id="modal-close" aria-label="Close dialog">Close</button></div><div id="modal-content"></div></div></div>
 <div class="toast" id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button class="btn" id="toast-undo">Undo</button><button class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification">×</button></div>
-<script src="cars.js?v=12"></script><script src="game.js?v=12"></script><script src="app.js?v=12"></script>
+<script src="cars.js?v=13"></script><script src="game.js?v=13"></script><script src="app.js?v=13"></script>
 </body>
 </html>

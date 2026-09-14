@@ -1,7 +1,7 @@
 {
   "name": "Spotted",
   "short_name": "spotted",
-  "description": "A road book for spotting cars on a journey: tap your sheet, win the trip.",
+  "description": "Spot car brands on a journey: choose a logo, spot any model, earn a point.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -9,6 +9,11 @@
   "background_color": "#eef0e7",
   "theme_color": "#eef0e7",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

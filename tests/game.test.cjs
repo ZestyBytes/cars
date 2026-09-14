@@ -11,7 +11,7 @@ test('v1 migration preserves raw totals, wins, active journey and car records', 
   const raw = { version: 1, tripNumber: 8, tripStart: 100, players: [{ id: 'dad', name: 'Dad', car: 'model-y', color: '#1c6e63', trip: 4, total: 52, wins: 6 }], journeys: [{ scores: [{ id: 'dad', car: 'model-y', score: 12 }] }] };
   const s = Game.migrate(raw, catalog);
   assert.equal(s.players[0].total, 52); assert.equal(s.players[0].points, 52);
-  assert.equal(s.players[0].tripPoints, 4); assert.equal(s.players[0].bests['model-y'], 12);
+  assert.equal(s.players[0].tripPoints, 4); assert.equal(s.players[0].bests.tesla, 12);
   Game.remove(s, 'dad'); assert.equal(s.players[0].trip, 3); assert.equal(s.players[0].points, 51);
   assert.equal(s.players[0].wins, 6); assert.equal(s.tripNumber, 8);
 });
@@ -25,8 +25,8 @@ test('classic scoring, targeted undo and zero floor', () => {
   assert.equal(Game.remove(s, p.id), null); assert.equal(p.points, 0); assert.equal(p.total, 0);
 });
 test('rarity snapshots settings, separates sightings/points and survives reload', () => {
-  const s = started({ mode: 'rarity', values: { jazz: 4 } }), p = s.players[1];
-  s.settings.values.jazz = 1;
+  const s = started({ mode: 'rarity', values: { honda: 4 } }), p = s.players[1];
+  s.settings.values.honda = 1;
   Game.add(s, p.id); Game.add(s, p.id);
   assert.equal(p.total, 2); assert.equal(p.points, 8); assert.equal(p.carSpots, 2);
   const loaded = Game.migrate(JSON.parse(JSON.stringify(s)), catalog);
@@ -64,11 +64,11 @@ test('reopen rolls back awards/bests, preserves elapsed time and supports correc
 });
 test('rematch and swap preserve all-time stats, clear active counters and advance journey exactly once', () => {
   const s = started(), p = s.players[0]; Game.add(s, p.id); Game.finish(s, 2000);
-  Game.swap(s); assert.equal(p.car, 'jazz'); assert.equal(Game.canReopen(s), false);
+  Game.swap(s); assert.equal(p.car, 'honda'); assert.equal(Game.canReopen(s), false);
   Game.start(s, catalog, 3000); assert.equal(s.tripNumber, 2); assert.equal(p.total, 1); assert.equal(p.trip, 0); assert.equal(p.wins, 1);
   assert.equal(Game.start(s, catalog, 4000), false); assert.equal(s.tripNumber, 2);
 });
-test('personal bests improve only on more sightings of the same model', () => {
+test('personal bests improve only on more sightings of the same brand', () => {
   const s = started(), p = s.players[0]; Game.add(s, p.id); Game.finish(s, 2000);
   Game.start(s, catalog, 3000); Game.add(s, p.id); Game.finish(s, 4000);
   assert.equal(s.lastTrip.highlights.length, 0);
@@ -79,12 +79,12 @@ test('removed or renamed roster cannot accidentally reopen and corrupt wins', ()
   const s = started(); Game.add(s, s.players[0].id); Game.finish(s, 2000);
   s.players.pop(); assert.equal(Game.reopen(s), false);
 });
-test('all catalog posters exist and all local shell requests are in offline cache', () => {
-  assert.equal(Object.keys(catalog).length, 10);
+test('all catalog logos exist and all local shell requests are in offline cache', () => {
+  assert.equal(Object.keys(catalog).length, 50);
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
-  for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 1000); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=12)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 100); assert.ok(worker.includes('./' + car.src)); }
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=13)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];
@@ -99,7 +99,7 @@ test('reopening at archive limit restores the oldest record rather than silently
   Game.reopen(s, 3000); assert.equal(s.journeys.length, 500); assert.equal(s.journeys[0].number, 0);
 });
 test('simplification preserves legacy scores and undo values but new sightings always earn one point', () => {
-  const s = started({ mode: 'rarity', bonus: true, values: { jazz: 4 } });
+  const s = started({ mode: 'rarity', bonus: true, values: { honda: 4 } });
   const p = s.players[1];
   const old = Game.add(s, p.id);
   Game.simplify(s);
@@ -112,4 +112,22 @@ test('simplification preserves legacy scores and undo values but new sightings a
   Game.finish(s, 2000); Game.start(s, catalog, 3000);
   assert.equal(s.tripRules.bonusCar, null);
   assert.equal(Game.add(s, p.id).points, 1);
+});
+
+test('legacy model selections and recovery data migrate to brands without losing scores', () => {
+  const s = started();
+  const p = s.players[0];
+  p.car = 'model-y'; p.bests = { 'model-y': 3, 'model-3': 5 };
+  Game.add(s, p.id); Game.finish(s, 2000);
+  const loaded = Game.migrate(JSON.parse(JSON.stringify(s)), catalog);
+  assert.equal(loaded.players[0].car, 'tesla');
+  assert.equal(loaded.players[0].bests.tesla, 5);
+  assert.equal(loaded.lastTrip.scores[0].car, 'tesla');
+  assert.equal(Game.canReopen(loaded), true);
+  Game.reopen(loaded, 3000);
+  assert.equal(loaded.events[0].car, 'tesla');
+  Game.remove(loaded, p.id);
+  assert.equal(loaded.players[0].points, 0);
+  assert.equal(loaded.players[0].bests.tesla, 5);
+  assert.deepEqual(Game.migrate(loaded, catalog), loaded);
 });
