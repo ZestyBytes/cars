@@ -39,13 +39,12 @@ function renderEditor() {
   $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
     <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
     <div class="pcard-body"><button class="car-select" data-pick="${p.id}" aria-label="Choose brand for ${escapeHtml(p.name || 'player')}">${carMark(p.car)}<span>Change brand ↗</span></button>
-      <div class="pcard-fields"><div class="avatar-editor">${avatarMark(p)}<button class="btn" data-photo="${p.id}">${p.avatar ? 'Change photo' : 'Add photo'}</button></div><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
+      <div class="pcard-fields"><label>Player name<input class="field" data-name="${p.id}" value="${escapeHtml(p.name)}" maxlength="18" autocomplete="off" placeholder="Name"></label>
       <div><p class="eyebrow">Looking for</p><h3 class="selected-car-name">${carLabel(p.car)}</h3></div>
       <div class="swatches" aria-label="Player colour">${COLORS.map((c, i) => `<button class="swatch" style="--sc:${c}" data-color="${p.id}" data-value="${c}" aria-pressed="${c === p.color}" aria-label="${COLOR_NAMES[i]}"></button>`).join('')}</div>
       <label>Point sound<div class="sound-picker"><select data-sound="${p.id}" aria-label="Sound for ${escapeHtml(p.name)}">${SOUNDS.map((sound, n) => `<option value="${n}" ${n === (p.sound ?? i % SOUNDS.length) ? 'selected' : ''}>${sound.name}</option>`).join('')}</select><button class="btn" data-preview="${p.id}" aria-label="Preview sound for ${escapeHtml(p.name)}">▶</button></div></label>
       <p class="hint">${p.bests[p.car] ? `Best trip: ${p.bests[p.car]} ${carLabel(p.car)} spots` : 'A fresh page for your next adventure.'}</p></div></div></article>`).join('');
-  $('#ready-players').innerHTML = state.players.map(p => `<span>${carMark(p.car)}<b>${avatarMark(p)}${escapeHtml(p.name || 'Player')}</b><small>${carLabel(p.car)}</small></span>`).join('');
-  $$('[data-photo]').forEach(el => el.onclick = () => editPhoto(el.dataset.photo));
+  $('#ready-players').innerHTML = state.players.map(p => `<span>${carMark(p.car)}<b>${escapeHtml(p.name || 'Player')}</b><small>${carLabel(p.car)}</small></span>`).join('');
   $$('[data-sound]').forEach(el => el.onchange = () => { findPlayer(el.dataset.sound).sound = Number(el.value); save(); });
   $$('[data-preview]').forEach(el => el.onclick = () => playerSound(el.dataset.preview, true));
   $$('[data-name]').forEach(el => el.oninput = () => { findPlayer(el.dataset.name).name = el.value; save(); });
@@ -93,7 +92,7 @@ function renderBoard() {
   $('#board').dataset.count = state.players.length;
   $('#board').innerHTML = state.players.map(p => `<article class="panel" style="--c:${p.color}" data-panel="${p.id}">
     <button class="spot-button" data-spot="${p.id}" aria-label="${escapeHtml(p.name)} spotted a ${carLabel(p.car)}">
-      <span class="panel-name">${avatarMark(p)}<span class="name-tag">${escapeHtml(p.name)}</span></span><span class="panel-model">${carLabel(p.car)}</span>
+      <span class="panel-name"><span class="name-tag">${escapeHtml(p.name)}</span></span><span class="panel-model">${carLabel(p.car)}</span>
       <span class="panel-art">${carMark(p.car)}</span><span class="score-line"><span class="panel-score" data-score="${p.id}">${p.tripPoints}</span><span class="score-unit">points</span></span>
       <span class="spot-label">Tap to spot · +1</span>
     </button><div class="panel-bottom"><span class="panel-detail" data-detail="${p.id}"></span><button class="btn panel-minus" data-minus="${p.id}" aria-label="Undo last sighting for ${escapeHtml(p.name)}">−1</button></div></article>`).join('');

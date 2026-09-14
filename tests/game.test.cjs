@@ -84,7 +84,7 @@ test('all catalog logos exist and all local shell requests are in offline cache'
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
   for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 100); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=20)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=21)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];

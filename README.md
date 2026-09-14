@@ -71,11 +71,10 @@ Optional browser checks: start the local server and run `node tests/browser-chec
 
 Pushing main publishes to GitHub Pages via the existing workflow.
 
-## Player photos
+## Player setup
 
-Choose an existing photo in Edit players. Avatars are resized and saved only in
-this browser. Camera capture and voice scoring were removed after in-car testing
-returned permission errors. Existing avatars and scores are preserved.
+Players choose a name, colour, brand and point sound. Photo upload, camera capture
+and voice recognition were removed after in-car testing showed they were unavailable.
 
 ## Brand bingo and Collection
 
