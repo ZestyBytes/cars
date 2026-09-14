@@ -33,7 +33,8 @@ function finishBingo() {
   const record = { endedAt: Date.now(), duration: Date.now()-state.tripStart, found: [...state.bingo.found], lines: bingoLines() };
   state.bingoHistory ||= []; state.bingoHistory.push(record); state.bingoHistory = state.bingoHistory.slice(-100);
   state.bingo = null; state.tripStart = null; save(); renderEditor(); showScreen('screen-setup');
-  openModal(record.found.length === 9 ? 'Full house! Teamwork wins.' : 'Your team bingo result', `<p class="bingo-result">${record.found.length} / 9 brands</p><p>${record.lines} completed lines · ${fmtDuration(record.duration)}</p><p class="hint">Your finds have been added to Collection. Play again for a fresh board.</p><div class="modal-actions"><button class="btn btn-primary" id="bingo-again">Play again</button></div>`);
+  openModal(record.found.length === 9 ? 'Full house! Teamwork wins.' : 'Your team bingo result', `<p class="bingo-result">${record.found.length} / 9 brands</p><p>${record.lines} completed lines · ${fmtDuration(record.duration)}</p><p class="hint">Your finds have been added to Collection. Play again for a fresh board.</p><div class="modal-actions"><button class="btn" id="bingo-again">Another bingo board</button><button class="btn btn-primary" id="bingo-new">New game →</button></div>`);
+  $('#bingo-new').onclick = () => { closeModal(); newGameSetup(); };
   $('#bingo-again').onclick = () => { closeModal(); startBingo(); };
 }
 function openCollection() {

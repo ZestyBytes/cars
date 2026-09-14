@@ -33,6 +33,8 @@ function showScreen(id) {
 }
 function renderEditor() {
   $$('[data-style]').forEach(el => el.setAttribute('aria-pressed', (state.gameStyle || 'classic') === el.dataset.style));
+  $('#btn-start').textContent = state.gameStyle === 'bingo' ? 'Start bingo →' : 'Start Classic →';
+  $('.brand-rules').textContent = state.gameStyle === 'bingo' ? 'One shared board. Tap each brand when spotted and celebrate a line together.' : 'Choose a brand for each player. Any model, colour or age counts — one sighting, one point.';
   $('.edition').textContent = `Brand spotting · ${CAR_ORDER.length} brands`;
   $('#player-editor').innerHTML = state.players.map((p, i) => `<article class="pcard" style="--c:${p.color}">
     <div class="pcard-top"><strong>SPOTTER ${String(i + 1).padStart(2, '0')}</strong>${state.players.length > 1 ? `<button class="pcard-remove" data-remove="${p.id}">Remove</button>` : ''}</div>
@@ -69,6 +71,11 @@ function openLibrary(playerId) {
     $$('[data-library-car]').forEach(el => el.onclick = () => { p.car = el.dataset.libraryCar; save(); renderEditor(); modalReturnFocus = $(`[data-pick="${p.id}"]`); closeModal(); });
   };
   $('#car-search').oninput = render; render();
+}
+function newGameSetup() {
+  $('#setup-editor').hidden = true;
+  $('#btn-edit-setup').textContent = 'Edit players';
+  renderEditor(); showScreen('screen-setup');
 }
 function startTrip(swap = false) {
   if (state.tripStart) return;
@@ -199,7 +206,7 @@ function showResults(celebrate = false, archive = false) {
   $('#result-highlights').innerHTML = !archive && t ? (t.highlights || []).filter(h => !h.first).map(h => `<div class="record-note"><span class="eyebrow">Personal best</span><span><b>${escapeHtml(h.name)}</b> · ${carLabel(h.car)}</span><strong>${h.count}</strong></div>`).join('') : '';
   $('#btn-reopen').hidden = archive || !Game.canReopen(state);
   $('#btn-swap').hidden = state.players.length < 2;
-  $('#btn-new-trip').textContent = archive ? 'Begin trip →' : 'Play again →';
+  $('#btn-new-trip').textContent = 'New game →';
   $('[data-tab="trip"]').hidden = !t;
   $('#screen-results').classList.toggle('archive-view', archive);
   setTab(archive ? 'all' : 'trip'); showScreen('screen-results');
@@ -288,9 +295,9 @@ $$('[data-style]').forEach(el => el.onclick = () => { state.gameStyle = el.datas
 $('#btn-collection').onclick = openCollection;
 $('#btn-start').onclick = () => startTrip();
 $('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
-$('#btn-new-trip').onclick = () => startTrip();
+$('#btn-new-trip').onclick = newGameSetup;
 $('#btn-swap').onclick = () => startTrip(true);
-$('#btn-edit-players').onclick = () => { $('#setup-editor').hidden = false; $('#btn-edit-setup').textContent = 'Done editing'; renderEditor(); showScreen('screen-setup'); };
+$('#btn-edit-players').onclick = () => startTrip();
 $('#btn-reopen').onclick = () => { if (Game.reopen(state)) { Game.simplify(state); renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Trip reopened. You can undo the last sighting.'); } };
 $('#btn-view-alltime').onclick = () => showResults(false, true);
 $('#btn-end').onclick = endTrip;
