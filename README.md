@@ -76,14 +76,8 @@ Pushing main publishes to GitHub Pages via the existing workflow.
 Players choose a name, colour, brand and point sound. Photo upload, camera capture
 and voice recognition were removed after in-car testing showed they were unavailable.
 
-## Brand bingo and Collection
+## Collection
 
-Choose Classic or Brand bingo before starting. Bingo is a shared nine-brand
-board drawn from everyday makes. Tap a tile to mark it; tap again to confirm
-an undo. Rows, columns and diagonals count as lines. Finish saves the team result;
-bingo does not change individual player scores or wins. An unfinished board survives reloading.
-
-Collection shows combined Classic and bingo brand counts, with search and faded
-unspotted brands, plus recent team bingo results. Existing saved journey details
-are imported once where available. Older missing history cannot be reconstructed.
-Counts remain after old trips leave the archive; Reset archive clears them.
+Collection shows recorded brand counts, with search and faded unspotted brands.
+Existing journey details are imported where available. Counts remain after old
+trips leave the archive. Bingo has been retired; earlier collection counts remain.

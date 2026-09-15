@@ -58,6 +58,10 @@ const Game = (() => {
         else s.players.forEach(p => count(p.car, p.carSpots));
       }
     }
+    // Retire an unfinished shared board without touching individual scores or finds.
+    if (s.bingo) { s.tripStart = null; s.lastTrip = null; s.events = []; s.tripRules = null; }
+    delete s.bingo;
+    delete s.gameStyle;
     s.version = 2;
     if (s.tripStart && !s.tripRules) s.tripRules = { ...settings(), bonusCar: null, values: {} };
     return s;

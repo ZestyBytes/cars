@@ -84,7 +84,7 @@ test('all catalog logos exist and all local shell requests are in offline cache'
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
   for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 100); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=21)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=22)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];
@@ -138,4 +138,12 @@ test('collection migration counts archived and active sightings once, then track
   assert.equal(s.brandCounts.ford,5);
   assert.equal(Game.migrate(s,catalog).brandCounts.ford,5);
   Game.remove(s,'p'); assert.equal(s.brandCounts.ford,4);
+});
+
+test('retired bingo resumes at setup and preserves collection and player totals', () => {
+  const raw = Game.fresh(); raw.tripStart = 100; raw.gameStyle = 'bingo'; raw.bingo = {found:['ford']}; raw.brandCounts = {ford:12}; raw.players[0].total = 23;
+  const s = Game.migrate(raw,catalog);
+  assert.equal(s.tripStart,null); assert.equal(s.bingo,undefined); assert.equal(s.gameStyle,undefined);
+  assert.equal(s.brandCounts.ford,12); assert.equal(s.players[0].total,23);
+  Game.start(s,catalog,200); Game.add(s,s.players[0].id); assert.equal(s.players[0].total,24);
 });

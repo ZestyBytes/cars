@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
 <section id="screen-setup" class="screen is-active">
@@ -19,10 +19,7 @@
   </header>
   <main class="setup-scroll">
     <div class="section-heading"><div><p class="eyebrow">The next trip</p><h2>Ready for a trip?</h2></div><span class="edition">Brand spotting · 50 brands</span></div>
-    <div class="game-styles" aria-label="Game style">
-<button class="mode-card" data-style="classic"><span class="mode-preview classic-preview" aria-hidden="true"><span>🚘<b>+1</b></span><span>🚙<b>+1</b></span></span><span class="mode-heading">Classic<span class="mode-check" aria-hidden="true">✓</span></span><span class="mode-description">Pick your brand. Every sighting scores.</span><span class="mode-tag">Friendly competition · 1–6 players</span></button>
-<button class="mode-card" data-style="bingo"><span class="mode-preview bingo-preview" aria-hidden="true"><i>✓</i><i></i><i></i><i></i><i>✓</i><i></i><i></i><i></i><i>✓</i></span><span class="mode-heading">Brand bingo<span class="mode-check" aria-hidden="true">✓</span></span><span class="mode-description">Find nine brands. Fill the board together.</span><span class="mode-tag">Team challenge · everyone joins in</span></button>
-</div><p class="hint brand-rules">Choose a brand. Spot any of its cars — any model, colour or age. Each sighting earns one point.</p>
+    <p class="hint brand-rules">Choose a brand. Spot any of its cars — any model, colour or age. Each sighting earns one point.</p>
     <div id="ready-players" class="ready-players"></div><button class="btn" id="btn-edit-setup">Edit players</button><div id="setup-editor" hidden><div id="player-editor" class="player-editor"></div>
     <button class="btn btn-add" id="btn-add-player">+ Add player</button></div>
 
@@ -33,7 +30,7 @@
   <header class="gamebar"><div class="gamebar-left"><div><span class="eyebrow">Trip <span id="trip-number">1</span></span><span class="trip-timer" id="trip-timer">00:00</span></div></div>
     <div class="gamebar-right"><button class="btn sound-toggle" id="btn-sound" aria-pressed="true" aria-label="Mute sound"></button><button class="btn btn-end" id="btn-end">Finish</button></div>
   </header>
-  <p id="bingo-instructions" class="bingo-instructions" hidden></p><div class="play"><main id="board" class="board"></main><aside class="standings" aria-label="Trip and overall leaderboard"><div class="rail-lead"><p class="eyebrow">This trip</p><h2 id="rail-leader">Off we go!</h2><p id="rail-gap"></p></div><h2 class="eyebrow rail-title">Overall points</h2><ol id="standings-list" class="standings-list"></ol><p id="standings-foot" class="hint"></p></aside></div>
+  <div class="play"><main id="board" class="board"></main><aside class="standings" aria-label="Trip and overall leaderboard"><div class="rail-lead"><p class="eyebrow">This trip</p><h2 id="rail-leader">Off we go!</h2><p id="rail-gap"></p></div><h2 class="eyebrow rail-title">Overall points</h2><ol id="standings-list" class="standings-list"></ol><p id="standings-foot" class="hint"></p></aside></div>
   <footer class="game-footer"><div class="live-summary"><strong id="live-leader">Off we go!</strong></div><div class="footer-actions"><button class="btn" id="btn-game-standings">Leaderboard</button></div></footer>
 </section>
 <section id="screen-results" class="screen">
@@ -45,6 +42,6 @@
 </section>
 <div class="modal" id="modal" hidden><div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title"><div class="modal-heading"><h2 id="modal-title"></h2><button class="btn" id="modal-close" aria-label="Close dialog">Close</button></div><div id="modal-content"></div></div></div>
 <div class="toast" id="toast" hidden><span id="toast-text" role="status" aria-live="polite"></span><button class="btn" id="toast-undo">Undo</button><button class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification">×</button></div>
-<script src="cars.js?v=21"></script><script src="game.js?v=21"></script><script src="bingo.js?v=21"></script><script src="app.js?v=21"></script>
+<script src="cars.js?v=22"></script><script src="game.js?v=22"></script><script src="collection.js?v=22"></script><script src="app.js?v=22"></script>
 </body>
 </html>
