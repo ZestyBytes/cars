@@ -12,10 +12,8 @@ Your usual players and brands appear ready to start; editing is optional. Tap a 
 - Tap the logo/score area to add a point. Players choose a two-note sound in their settings, with a preview button;
   the speaker icon mutes them. There are no scoring pop-ups. The score briefly grows on a hit, and the tap hint disappears after three spots. Text selection, image dragging and hold menus are disabled on the playing surface; name fields remain editable.
 - Each player's separate −1 control removes their latest sighting.
-- Finish trip goes straight to the results, without confirmation. Reopen trip
-  restores the latest trip and reverses its win/best awards so mistakes can be
-  corrected. Reopening is available until the next trip or a roster change.
-- Play again keeps the brands; Swap brands & play swaps or rotates them.
+- Finish trip uses a large, high-contrast button and opens results directly.
+- Results offer New game (returns to setup) or View leaderboard.
 - The results show final player scores once, with the full leaderboard behind Overall and Log.
 - Personal bests appear as compact records. First-ever scores are not announced.
 - Tap the Spotted logo on the player setup screen to switch day/night mode.

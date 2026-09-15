@@ -195,8 +195,6 @@ function showResults(celebrate = false, archive = false) {
   $('#results-sub').textContent = archive ? `${state.journeys.length} trips and counting` : scores.length ? `${scores.map(s => s.score).join(' – ')} points${winners.length ? ' · well spotted!' : ' · another adventure awaits'}` : 'Your next adventure starts here.';
   $('#result-cards').innerHTML = !archive && t ? t.scores.map(s => `<div class="result-card" style="--c:${s.color}">${carMark(s.car)}<b>${escapeHtml(s.name)}</b><strong>${s.score}</strong>${s.spots != null && s.spots !== s.score ? `<small>${s.spots} ${s.spots === 1 ? 'car' : 'cars'} spotted</small>` : ''}</div>`).join('') : '';
   $('#result-highlights').innerHTML = !archive && t ? (t.highlights || []).filter(h => !h.first).map(h => `<div class="record-note"><span class="eyebrow">Personal best</span><span><b>${escapeHtml(h.name)}</b> · ${carLabel(h.car)}</span><strong>${h.count}</strong></div>`).join('') : '';
-  $('#btn-reopen').hidden = archive || !Game.canReopen(state);
-  $('#btn-swap').hidden = state.players.length < 2;
   $('#btn-new-trip').textContent = 'New game →';
   $('[data-tab="trip"]').hidden = !t;
   $('#screen-results').classList.toggle('archive-view', archive);
@@ -286,9 +284,7 @@ $('#btn-collection').onclick = openCollection;
 $('#btn-start').onclick = () => startTrip();
 $('#btn-edit-setup').onclick = () => { const editor = $('#setup-editor'); editor.hidden = !editor.hidden; $('#btn-edit-setup').textContent = editor.hidden ? 'Edit players' : 'Done editing'; if (editor.hidden) renderEditor(); };
 $('#btn-new-trip').onclick = newGameSetup;
-$('#btn-swap').onclick = () => startTrip(true);
-$('#btn-edit-players').onclick = () => startTrip();
-$('#btn-reopen').onclick = () => { if (Game.reopen(state)) { Game.simplify(state); renderBoard(); showScreen('screen-game'); startTimer(); save(); toast('Trip reopened. You can undo the last sighting.'); } };
+$('#btn-results-leaderboard').onclick = () => { setTab('all'); $('.result-record').scrollIntoView({block:'start', behavior:'smooth'}); };
 $('#btn-view-alltime').onclick = () => showResults(false, true);
 $('#btn-end').onclick = endTrip;
 
