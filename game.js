@@ -166,6 +166,31 @@ const Game = (() => {
     s.settings = { mode: 'classic', target: 0, teamTarget: 0, bonus: false, values: {} };
     if (s.tripRules) s.tripRules = { ...s.tripRules, ...s.settings, bonusCar: null };
   }
-  return { simplify, fresh, player, migrate, start, add, remove, finish, reopen, canReopen, swap, raceWon };
+  // Months are derived from the trip archive, never stored: the current
+  // calendar month's total is just whichever trips landed in it so far.
+  function monthly(s, now = Date.now()) {
+    const groups = new Map();
+    for (const j of s.journeys) {
+      const d = new Date(j.endedAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      let g = groups.get(key);
+      if (!g) { g = { key, year: d.getFullYear(), month: d.getMonth(), trips: 0, totals: new Map() }; groups.set(key, g); }
+      g.trips++;
+      for (const sc of j.scores) {
+        const t = g.totals.get(sc.id) || { id: sc.id, points: 0 };
+        t.name = sc.name; t.car = sc.car; t.color = sc.color; t.points += number(sc.score);
+        g.totals.set(sc.id, t);
+      }
+    }
+    const current = new Date(now);
+    const currentKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+    return [...groups.values()].sort((a, b) => b.key.localeCompare(a.key)).map(g => {
+      const players = [...g.totals.values()].sort((a, b) => b.points - a.points);
+      const top = players[0]?.points || 0;
+      const winnerIds = top > 0 ? players.filter(p => p.points === top).map(p => p.id) : [];
+      return { key: g.key, year: g.year, month: g.month, trips: g.trips, current: g.key === currentKey, players, winnerIds };
+    });
+  }
+  return { simplify, fresh, player, migrate, start, add, remove, finish, reopen, canReopen, swap, raceWon, monthly };
 })();
 if (typeof module !== 'undefined') module.exports = Game;

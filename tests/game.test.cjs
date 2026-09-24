@@ -84,7 +84,7 @@ test('all catalog logos exist and all local shell requests are in offline cache'
   const html = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   const worker = fs.readFileSync(require.resolve('../sw.js'), 'utf8');
   for (const car of Object.values(catalog)) { assert.ok(fs.statSync(require.resolve('../' + car.src)).size > 100); assert.ok(worker.includes('./' + car.src)); }
-  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=23)"/g)) assert.ok(worker.includes('./' + url), url);
+  for (const [, url] of html.matchAll(/(?:src|href)="([^"]+\?v=\d+)"/g)) assert.ok(worker.includes('./' + url), url);
 });
 test('quick round triggers at target, including bonus overshoot; undo then reopen remains playable', () => {
   const s = started({ mode: 'race', target: 5, bonus: true }), p = s.players[0];
@@ -146,4 +146,26 @@ test('retired bingo resumes at setup and preserves collection and player totals'
   assert.equal(s.tripStart,null); assert.equal(s.bingo,undefined); assert.equal(s.gameStyle,undefined);
   assert.equal(s.brandCounts.ford,12); assert.equal(s.players[0].total,23);
   Game.start(s,catalog,200); Game.add(s,s.players[0].id); assert.equal(s.players[0].total,24);
+});
+test('monthly groups the archive by calendar month, picks winners (ties included) and never mutates stored totals', () => {
+  const s = fresh(), [dad, molly] = s.players;
+  const score = (id, n) => ({ id, name: s.players.find(p => p.id === id).name, car: s.players.find(p => p.id === id).car, color: '#000', score: n });
+  s.journeys.push({ number: 1, endedAt: new Date(2026, 8, 5, 12).getTime(), scores: [score(dad.id, 3), score(molly.id, 1)] });
+  s.journeys.push({ number: 2, endedAt: new Date(2026, 8, 20, 12).getTime(), scores: [score(dad.id, 1), score(molly.id, 5)] });
+  s.journeys.push({ number: 3, endedAt: new Date(2026, 9, 3, 12).getTime(), scores: [score(dad.id, 2), score(molly.id, 2)] });
+  const months = Game.monthly(s, new Date(2026, 9, 10).getTime());
+  assert.equal(months.length, 2);
+  assert.equal(months[0].key, '2026-10'); assert.equal(months[0].current, true); assert.equal(months[0].trips, 1);
+  assert.deepEqual(months[0].winnerIds.sort(), [dad.id, molly.id].sort());
+  assert.equal(months[1].key, '2026-09'); assert.equal(months[1].current, false); assert.equal(months[1].trips, 2);
+  assert.deepEqual(months[1].winnerIds, [molly.id]);
+  assert.equal(months[1].players.find(p => p.id === molly.id).points, 6);
+  assert.equal(months[1].players.find(p => p.id === dad.id).points, 4);
+  assert.equal(dad.points, 0); assert.equal(molly.points, 0);
+});
+test('monthly reports nothing before any trip is archived, and skips a scoreless month', () => {
+  assert.deepEqual(Game.monthly(fresh()), []);
+  const s = fresh();
+  s.journeys.push({ number: 1, endedAt: new Date(2026, 8, 5, 12).getTime(), scores: [{ id: s.players[0].id, name: s.players[0].name, car: s.players[0].car, score: 0 }] });
+  assert.deepEqual(Game.monthly(s)[0].winnerIds, []);
 });

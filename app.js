@@ -216,6 +216,16 @@ function setTab(which) {
     }).join('') || '<li class="lb-empty">Your first trip will be recorded here.</li>';
     return;
   }
+  if (which === 'month') {
+    const months = Game.monthly(state);
+    list.innerHTML = months.map(m => {
+      const label = new Date(m.year, m.month, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      const winners = m.players.filter(p => m.winnerIds.includes(p.id));
+      const title = winners.length > 1 ? `${winners.map(w => w.name).join(' & ')} tied` : winners.length ? `${winners[0].name} won` : 'No spots that month';
+      return `<li class="log-row"><span class="eyebrow">${escapeHtml(label)}${m.current ? ' · so far' : ''} · ${m.trips} ${m.trips === 1 ? 'trip' : 'trips'}</span><b>${escapeHtml(title)}</b><small>${m.players.map(p => `${escapeHtml(p.name)} ${p.points} pts`).join(' · ')}</small></li>`;
+    }).join('') || '<li class="lb-empty">Your first month will be recorded here.</li>';
+    return;
+  }
   let rows = which === 'trip' && state.lastTrip ? state.lastTrip.scores.map(s => ({ ...s, value: s.score, sub: `${carLabel(s.car)}${s.spots != null && s.spots !== s.score ? ` · ${s.spots} ${s.spots === 1 ? 'car' : 'cars'}` : ''}` })) : state.players.map(p => ({ ...p, value: p.points, sub: `${p.total !== p.points ? `${p.total} cars spotted · ` : ''}${p.wins} ${p.wins === 1 ? 'trip' : 'trips'} won` }));
   rows.sort((a, b) => b.value - a.value);
   list.innerHTML = rows.map((r, i) => `<li class="lb-row"><span class="lb-rank">${rows.findIndex(s => s.value === r.value) + 1}</span><span class="lb-car">${carMark(r.car)}</span><span class="lb-name"><b>${escapeHtml(r.name)}</b><small>${escapeHtml(r.sub)}</small></span><span class="lb-score">${r.value}<small>points</small></span></li>`).join('');
