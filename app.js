@@ -69,8 +69,10 @@ function openLibrary(playerId) {
   $('#car-search').oninput = render; render();
 }
 function newGameSetup() {
-  $('#setup-editor').hidden = true;
-  $('#btn-edit-setup').textContent = 'Edit players';
+  // Land straight on the editor: after finishing a trip, swapping players
+  // or brands for the next one should not require hunting for a toggle.
+  $('#setup-editor').hidden = false;
+  $('#btn-edit-setup').textContent = 'Done editing';
   renderEditor(); showScreen('screen-setup');
 }
 function startTrip(swap = false) {

@@ -308,6 +308,7 @@ progress::-moz-progress-bar{background:var(--green)}
 .gamebar-left .mini-logo{display:block}
 .sound-toggle{width:48px;padding:11px;border:0;background:none}
 .sound-toggle svg{display:block;width:24px;height:24px}
+.btn-end svg{display:block;width:20px;height:20px;flex-shrink:0}
 .btn{border-radius:2px;background:transparent}
 .btn-primary{background:var(--ink)}
 .chip{border:0;padding:0;border-radius:0;color:var(--muted)}
@@ -454,5 +455,5 @@ progress::-moz-progress-bar{background:var(--green)}
 
 /* A generous finish target, separated from the scoring surface. */
 .gamebar-right #btn-end{display:flex;align-items:center;justify-content:center;gap:10px;min-height:60px;min-width:160px;padding:14px 22px;font-size:18px;font-weight:750;background:var(--ink);color:var(--paper);border:2px solid var(--ink);border-radius:10px}
-.gamebar-right #btn-end span{font-size:24px}.gamebar-right{gap:12px}.results-actions .btn{min-height:56px}
+.gamebar-right{gap:12px}.results-actions .btn{min-height:56px}
 @media(max-width:480px){.gamebar-right #btn-end{min-width:142px;min-height:56px;padding:12px 16px;font-size:17px}.gamebar-right{gap:8px}}
